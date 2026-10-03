@@ -1,0 +1,496 @@
+{
+  "info": {
+    "name": "HR App - Issue Fixes Verification",
+    "description": "Checks for the fixes to issues #1, #4, #5, #20 and #21 (LLM parser, OCR, Word files, not-a-resume check, job titles in BM25). Start the server with `npm run dev` first. Run steps 3 and 4 only after `npm run reparse:resumes` has finished, because they share Groq's rate limit.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Retrieval readiness",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/v1/search/readiness",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "search",
+            "readiness"
+          ]
+        },
+        "description": "Retrieval is still ready after the re-parse."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('ready', () => pm.expect(d.ready).to.be.true);",
+              "pm.test('mistral-embed, 1024 dimensions', () => { pm.expect(d.embeddingModel).to.eql('mistral-embed'); pm.expect(d.embeddingDimension).to.eql(1024); });",
+              "pm.test('every resume has an embedding', () => pm.expect(d.resumesWithEmbedding).to.eql(d.resumeCount));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Batch status (#5 Word files, not-a-resume)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/v1/resume/batch-status",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resume",
+            "batch-status"
+          ]
+        },
+        "description": "Word files are counted as supported; offer letters are failed with 'Not a resume'."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('Word files supported', () => { pm.expect(d.wordFiles).to.be.above(0); pm.expect(d.supportedFiles).to.eql(d.pdfFiles + d.wordFiles); });",
+              "pm.test('every supported file accounted for', () => pm.expect(d.ingested + d.duplicate + d.failed + d.pending).to.eql(d.supportedFiles));",
+              "pm.test('consistent', () => pm.expect(d.consistent).to.be.true);",
+              "pm.test('every failure has a reason', () => d.failures.forEach(f => pm.expect(f.reason).to.be.a('string')));",
+              "console.log('pending:', d.pending, 'failures:', d.failures);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Ingest Word files (#5)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"batchSize\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/resume/batch-inject",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resume",
+            "batch-inject"
+          ]
+        },
+        "description": "Ingests the next 5 pending files (the 19 Word files). Job descriptions should fail with 'Not a resume'. Send repeatedly until 'No pending resumes to ingest'. Slow: uses Groq."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('counts add up', () => pm.expect(d.ingested + d.duplicate + d.failed).to.eql(d.selected));",
+              "pm.test('failures have a reason', () => d.files.filter(f => f.status === 'failed').forEach(f => pm.expect(f.reason).to.be.a('string')));",
+              "console.log(d.files.map(f => f.status + ' ' + f.sourceFile + ' ' + (f.reason || '')).join('\\n'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Retry scanned PDFs with OCR (#5)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"batchSize\": 10,\n  \"retryFailed\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/resume/batch-inject",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resume",
+            "batch-inject"
+          ]
+        },
+        "description": "Retries previously failed files; scanned PDFs are now OCR'd. 'PAN CARD CO-APP.pdf' should fail with 'Not a resume'. Slow: OCR + Groq."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('counts add up', () => pm.expect(d.ingested + d.duplicate + d.failed).to.eql(d.selected));",
+              "console.log(d.files.map(f => f.status + ' ' + f.sourceFile + ' ' + (f.reason || '')).join('\\n'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Garbled name fixed by OCR (#20)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/v1/resumes/6abba27fa24280e1b4ab36ac",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resumes",
+            "6abba27fa24280e1b4ab36ac"
+          ]
+        },
+        "description": "Was 'Mtititititi Ktitititi' because the PDF's font map is broken; now OCR'd."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('name is Mukesh Kanna', () => pm.expect(d.name).to.eql('Mukesh Kanna'));",
+              "pm.test('text came from OCR', () => pm.expect(d.textSource).to.eql('ocr'));",
+              "pm.test('parsed by the LLM', () => pm.expect(d.parser).to.eql('llm'));",
+              "pm.test('has job titles', () => pm.expect(d.jobTitles).to.include('Junior QA Analyst'));",
+              "pm.test('no embedding in response', () => pm.expect(d).to.not.have.property('embedding'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Tool name no longer used as a name (#20)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/v1/resumes/6abba296a66937252856ed2c",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resumes",
+            "6abba296a66937252856ed2c"
+          ]
+        },
+        "description": "Was 'Opentext LoadRunner'. The candidate's name appears only in the email, so null is correct."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('name is not a tool name', () => pm.expect(d.name).to.not.eql('Opentext LoadRunner'));",
+              "pm.test('role is set', () => pm.expect(d.role).to.be.a('string'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. BM25 searches job titles (#1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"Junior QA Analyst\",\n  \"topK\": 3\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/search/bm25",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "search",
+            "bm25"
+          ]
+        },
+        "description": "'Junior QA Analyst' is only in Mukesh Kanna's jobTitles, not his current role."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('Mukesh Kanna found through jobTitles', () => pm.expect(d.results.map(r => r.name)).to.include('Mukesh Kanna'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Not a resume is rejected (#20)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rawText\": \"Job Description. Job Title: Admin Support. Location: Chennai. Responsibilities: manage office supplies, schedule meetings. Requirements: 1-3 years experience, MS Office.\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/resume/llm-parse",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resume",
+            "llm-parse"
+          ]
+        },
+        "description": "A job description is rejected by the LLM parser."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('422', () => pm.response.to.have.status(422));",
+              "pm.test('message', () => pm.expect(pm.response.json().message).to.eql('Not a resume'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Parser returns new fields (#1, #4)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"rawText\": \"ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com\\nEXPERIENCE\\nQA Engineer | TCS | Jan 2023 - Present\\nJunior Tester | Infosys | Jun 2020 - Dec 2022\\nSKILLS\\nJava, Selenium\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/resume/llm-parse",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resume",
+            "llm-parse"
+          ]
+        },
+        "description": "jobTitles and experienceSummary are returned; the summary has no gendered pronouns; 'Present' counts up to today."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "pm.test('parser is llm', () => pm.expect(d.parser).to.eql('llm'));",
+              "pm.test('job titles', () => pm.expect(d.jobTitles).to.include.members(['QA Engineer', 'Junior Tester']));",
+              "pm.test('experience summary', () => pm.expect(d.experienceSummary).to.be.a('string'));",
+              "pm.test('no gendered pronouns', () => pm.expect(/\\b(he|she|his|her|him)\\b/i.test(d.experienceSummary)).to.be.false);",
+              "pm.test('experience counts Present as today (more than 5 years)', () => pm.expect(d.totalExperience).to.be.above(5));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. List resumes (#4)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:3000/v1/resumes?page=1&limit=20",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "resumes"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        },
+        "description": "Re-parsed resumes have names; resumes not yet re-parsed may still show null."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json().data;",
+              "const nulls = d.items.filter(r => r.name === null).length;",
+              "console.log('null names on this page: ' + nulls + ' of ' + d.items.length);",
+              "pm.test('items returned', () => pm.expect(d.items.length).to.be.above(0));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. AI-profile vector search (#21)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"AI trainee with machine learning and LLM skills\",\n  \"topK\": 5\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:3000/v1/search/vector",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "3000",
+          "path": [
+            "v1",
+            "search",
+            "vector"
+          ]
+        },
+        "description": "Only meaningful after step 3. Compare vectorScore values with QA queries (about 0.90)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('mode vector', () => pm.expect(d.mode).to.eql('vector'));",
+              "console.log(d.results.map(r => r.vectorScore + ' ' + r.name + ' | ' + r.role).join('\\n'));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

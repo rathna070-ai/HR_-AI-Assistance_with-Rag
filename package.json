@@ -1,0 +1,39 @@
+{
+  "name": "hr-app-agent",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "ingest:batch": "tsx src/scripts/ingestBatch.ts",
+    "search:index": "tsx src/scripts/createSearchIndex.ts",
+    "search:bm25-index": "tsx src/scripts/configureBm25Index.ts",
+    "reparse:resumes": "tsx src/scripts/reparseResumes.ts",
+    "test": "node --import tsx --test \"tests/unit/**/*.test.ts\"",
+    "test:integration": "node --env-file=.env --import tsx --test --test-concurrency=1 \"tests/integration/**/*.test.ts\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "an-array-of-english-words": "^2.0.0",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "mongodb": "^7.6.0",
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5",
+    "tesseract.js": "^7.0.0",
+    "word-extractor": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.6.3",
+    "@types/word-extractor": "^1.0.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

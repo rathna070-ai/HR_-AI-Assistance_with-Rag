@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+uploads/*
+!uploads/.gitkeep
+resumes/
+backups/
+src/RESUME_SOURCE_DIR/
