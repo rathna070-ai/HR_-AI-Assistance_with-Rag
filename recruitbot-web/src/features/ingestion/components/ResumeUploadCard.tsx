@@ -14,7 +14,8 @@ export function ResumeUploadCard() {
       ) : (
         <section className="flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-bg-card p-6 shadow-xl">
           <UploadDropzone selectedFile={selectedFile} disabled={isUploading} onFileSelected={selectFile} />
-          <UploadButton disabled={!selectedFile} isUploading={isUploading} onClick={upload} />
+          {/* Enabled without a file so an empty submit shows "Please select a file". */}
+          <UploadButton isUploading={isUploading} onClick={upload} />
         </section>
       )}
       <UploadProgress />

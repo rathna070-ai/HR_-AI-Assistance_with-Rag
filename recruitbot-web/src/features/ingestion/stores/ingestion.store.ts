@@ -8,8 +8,10 @@ export interface IngestionState {
   uploadProgress: number; // 0-100, bytes sent to the backend
   successResult: IngestionResult | null;
   error: string | null;
+  validationError: string | null;
 
   selectFile: (file: File) => void;
+  rejectFile: (message: string) => void;
   startUpload: () => void;
   setUploadProgress: (percent: number) => void;
   uploadSucceeded: (result: IngestionResult) => void;
@@ -23,13 +25,16 @@ const initialState = {
   uploadProgress: 0,
   successResult: null,
   error: null,
+  validationError: null,
 };
 
 export const useIngestionStore = create<IngestionState>((set) => ({
   ...initialState,
-  // A new file clears the previous attempt's status.
-  selectFile: (file) => set({ selectedFile: file, uploadProgress: 0, successResult: null, error: null }),
-  startUpload: () => set({ isUploading: true, uploadProgress: 0, successResult: null, error: null }),
+  // A new valid file clears the previous attempt's status and any validation message.
+  selectFile: (file) => set({ selectedFile: file, uploadProgress: 0, successResult: null, error: null, validationError: null }),
+  // An invalid selection is not kept, so it can never be uploaded.
+  rejectFile: (message) => set({ selectedFile: null, uploadProgress: 0, successResult: null, error: null, validationError: message }),
+  startUpload: () => set({ isUploading: true, uploadProgress: 0, successResult: null, error: null, validationError: null }),
   setUploadProgress: (percent) => set({ uploadProgress: percent }),
   uploadSucceeded: (result) => set({ isUploading: false, uploadProgress: 100, successResult: result, error: null }),
   uploadFailed: (error) => set({ isUploading: false, successResult: null, error }),
