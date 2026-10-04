@@ -12,6 +12,9 @@ export function useSearch() {
 
     addUserMessage(query);
     setSearching(true);
+    const threadId = useChatStore.getState().threadId;
+    // False once the chat was cleared while this search ran: its reply is dropped.
+    const stillCurrent = () => useChatStore.getState().threadId === threadId;
     // The mode is fixed for this query even if the user switches while it runs.
     const mode = searchType;
 
@@ -23,12 +26,13 @@ export function useSearch() {
         bm25Weight: bm25Weight / 100,
         vectorWeight: vectorWeight / 100,
       });
+      if (!stillCurrent()) return;
       setResults(data.results, data.query);
       addBotMessage(<ResultsList results={data.results} searchType={mode} duration={data.duration} query={data.query} />);
     } catch {
-      addBotMessage(<p className="text-red-400">Search failed. Please try again.</p>);
+      if (stillCurrent()) addBotMessage(<p className="text-red-400">Search failed. Please try again.</p>);
     } finally {
-      setSearching(false);
+      if (stillCurrent()) setSearching(false);
     }
   }
 

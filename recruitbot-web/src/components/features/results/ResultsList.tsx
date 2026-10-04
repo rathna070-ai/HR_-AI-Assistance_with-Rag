@@ -22,7 +22,14 @@ export function ResultsList({ results, searchType, duration, query }: ResultsLis
         <EmptyState />
       ) : (
         results.map((result, i) => (
-          <ResultCard key={result.candidateId} result={result} rank={i + 1} searchType={searchType} onSelect={openCandidateModal} index={i} />
+          <ResultCard
+            key={result.candidateId}
+            result={result}
+            rank={i + 1}
+            searchType={searchType}
+            onSelect={openCandidateModal}
+            index={i}
+          />
         ))
       )}
     </div>

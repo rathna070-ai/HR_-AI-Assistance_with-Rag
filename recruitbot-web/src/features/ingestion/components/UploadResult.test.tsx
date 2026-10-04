@@ -8,7 +8,12 @@ describe("UploadResult", () => {
   it("shows the completed ingestion checklist and resume id", () => {
     render(<UploadResult result={ingested} onUploadAnother={vi.fn()} />);
     expect(screen.getByText("Resume ingestion completed")).toBeInTheDocument();
-    for (const line of ["Resume uploaded successfully", "Embedding generated successfully", "MongoDB ingestion completed", "Vector search ready"]) {
+    for (const line of [
+      "Resume uploaded successfully",
+      "Embedding generated successfully",
+      "MongoDB ingestion completed",
+      "Vector search ready",
+    ]) {
       expect(screen.getByText(line)).toBeInTheDocument();
     }
     expect(screen.getByTestId("resume-id")).toHaveTextContent("6abba27fa24280e1b4ab36ac");

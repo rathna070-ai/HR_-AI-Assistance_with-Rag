@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# RecruitBot Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + TypeScript frontend for the HR resume backend in the parent folder: upload resumes (ingestion) and search candidates (retrieval).
 
-Currently, two official plugins are available:
+| Route | Page |
+|---|---|
+| `/` | Candidate search chat (Vector, BM25, Hybrid) |
+| `/ingestion` | Resume upload |
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Run locally
 
-## React Compiler
+1. Start the backend from the repository root: `npm run dev` (http://localhost:3000).
+2. In this folder:
+   ```bash
+   npm install
+   npm run dev
+   ```
+3. Open http://localhost:5173.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+In development the browser calls `/v1/...` on the same origin and Vite forwards it to the backend (`vite.config.ts`), because the backend sends no CORS headers.
 
-## Expanding the Oxlint configuration
+## Scripts
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server on port 5173 |
+| `npm run build` | Type-check and production build to `dist/` |
+| `npm run preview` | Serve the production build |
+| `npm test` | Unit and component tests (Vitest + React Testing Library) |
+| `npm run lint` | Lint (oxlint) |
+| `npm run format` | Format with Prettier |
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
-```
+## Backend endpoints used
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+| Feature | Endpoint |
+|---|---|
+| Resume upload | `POST /v1/resume/inject` (form-data field `file`, PDF, max 5MB) |
+| Vector search | `POST /v1/search/vector` |
+| BM25 search | `POST /v1/search/bm25` |
+| Hybrid search | `POST /v1/search/hybrid`, blended in the browser with the sidebar weights (`src/lib/utils/hybridFusion.ts`) |
+| Candidate profile, result details | `GET /v1/resumes/:id` |
+
+The frontend guide describes `POST /search/resumes` and `GET /candidate/:id`; the backend does not have those, so `src/lib/api/search.api.ts` and `candidate.api.ts` map the guide's request and response types onto the endpoints above.
+
+## Deployment
+
+`vercel.json` builds with Vite and rewrites client-side routes (such as `/ingestion`) to `index.html`. Set `VITE_API_BASE_URL` to the backend URL. The backend has no CORS headers, so either serve it from the same origin (reverse proxy) or add CORS to the backend first.

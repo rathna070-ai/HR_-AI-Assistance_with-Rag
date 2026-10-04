@@ -26,7 +26,9 @@ describe("ResultCard", () => {
   });
 
   it("truncates the snippet to 200 characters and renders it as text", () => {
-    render(<ResultCard result={{ ...mockResult, content: "<b>x</b> " + "a".repeat(400) }} rank={1} searchType="vector" onSelect={vi.fn()} />);
+    render(
+      <ResultCard result={{ ...mockResult, content: "<b>x</b> " + "a".repeat(400) }} rank={1} searchType="vector" onSelect={vi.fn()} />,
+    );
     const snippet = screen.getByText(/^<b>x<\/b>/);
     expect(snippet.textContent!.length).toBeLessThanOrEqual(201);
     expect(snippet.querySelector("b")).toBeNull();

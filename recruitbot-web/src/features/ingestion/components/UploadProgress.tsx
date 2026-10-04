@@ -18,7 +18,11 @@ export function UploadProgress() {
 
   let status;
   if (isUploading)
-    status = <p className="text-text-primary">{uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : "Uploading... processing on the server"}</p>;
+    status = (
+      <p className="text-text-primary">
+        {uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : "Uploading... processing on the server"}
+      </p>
+    );
   else if (successResult)
     status = (
       <p className="text-score-hybrid">
@@ -47,7 +51,12 @@ export function UploadProgress() {
         {stages.map((stage) => (
           <li key={stage.id} data-state={stage.state} className="flex items-center gap-2">
             {ICONS[stage.state]}
-            <span className={cn(stage.state === "pending" || stage.state === "skipped" ? "text-text-muted" : "text-text-primary", stage.state === "failed" && "text-red-400")}>
+            <span
+              className={cn(
+                stage.state === "pending" || stage.state === "skipped" ? "text-text-muted" : "text-text-primary",
+                stage.state === "failed" && "text-red-400",
+              )}
+            >
               {stage.label}
             </span>
             {stage.detail && <span className="ml-auto text-xs text-text-muted">{stage.detail}</span>}

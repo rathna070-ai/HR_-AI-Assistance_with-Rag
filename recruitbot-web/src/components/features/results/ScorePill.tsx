@@ -11,7 +11,10 @@ const PILL_CLASSES: Record<SearchMode, string> = {
 
 export function ScorePill({ score, searchType }: { score: number; searchType: SearchMode }) {
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5", PILL_CLASSES[searchType])} data-testid="score-pill">
+    <span
+      className={cn("inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5", PILL_CLASSES[searchType])}
+      data-testid="score-pill"
+    >
       <span className="text-sm font-semibold">{formatScore(score)}</span>
       <span className="text-[11px] opacity-80">{SEARCH_MODES[searchType].scoreLabel}</span>
     </span>

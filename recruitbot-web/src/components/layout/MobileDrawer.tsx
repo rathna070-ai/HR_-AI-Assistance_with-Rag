@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,14 +26,14 @@ export function MobileDrawer() {
     <AnimatePresence>
       {open && isMobile && (
         <>
-          <motion.div
+          <m.div
             className="fixed inset-0 z-30 bg-black/50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={close}
           />
-          <motion.aside
+          <m.aside
             className="fixed inset-y-0 left-0 z-40 flex w-[260px] flex-col gap-4 overflow-y-auto border-r border-white/[0.07] bg-bg-surface p-5"
             initial={{ x: -280 }}
             animate={{ x: 0 }}
@@ -42,11 +42,16 @@ export function MobileDrawer() {
             aria-label="Sidebar"
             data-testid="mobile-drawer"
           >
-            <button type="button" onClick={close} className="self-end rounded-md p-1 text-text-muted hover:bg-white/[0.06]" aria-label="Close sidebar">
+            <button
+              type="button"
+              onClick={close}
+              className="self-end rounded-md p-1 text-text-muted hover:bg-white/[0.06]"
+              aria-label="Close sidebar"
+            >
               <X className="h-5 w-5" aria-hidden />
             </button>
             <SidebarContent />
-          </motion.aside>
+          </m.aside>
         </>
       )}
     </AnimatePresence>

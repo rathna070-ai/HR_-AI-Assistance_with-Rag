@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Slider } from "@/components/ui/slider";
 import { useHybridWeights } from "@/hooks/use-hybrid-weights";
 import { WEIGHT_PRESETS } from "@/lib/utils/constants";
@@ -8,7 +8,7 @@ export function HybridWeightPanel() {
   const { bm25Weight, vectorWeight, handleBm25Change, handleVectorChange, applyPreset } = useHybridWeights();
 
   return (
-    <motion.div
+    <m.div
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
       exit={{ height: 0, opacity: 0 }}
@@ -31,7 +31,9 @@ export function HybridWeightPanel() {
                 aria-label={`Preset BM25 ${bm25}% / Vector ${vector}%`}
                 className={cn(
                   "flex-1 rounded-full border px-2 py-1 text-xs transition-colors",
-                  active ? "border-indigo-400/40 bg-indigo-500/20 text-text-primary" : "border-white/[0.1] text-text-muted hover:text-text-primary",
+                  active
+                    ? "border-indigo-400/40 bg-indigo-500/20 text-text-primary"
+                    : "border-white/[0.1] text-text-muted hover:text-text-primary",
                 )}
               >
                 {bm25}/{vector}
@@ -40,7 +42,7 @@ export function HybridWeightPanel() {
           })}
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -49,7 +51,9 @@ function WeightRow({ label, value, onChange }: { label: string; value: number; o
     <div className="flex flex-col gap-1.5">
       <div className="flex justify-between text-xs">
         <span className="text-text-muted">{label}</span>
-        <span className="font-medium text-text-primary" data-testid={`weight-${label.toLowerCase()}`}>{value}%</span>
+        <span className="font-medium text-text-primary" data-testid={`weight-${label.toLowerCase()}`}>
+          {value}%
+        </span>
       </div>
       <Slider value={[value]} min={0} max={100} step={5} onValueChange={([v]) => onChange(v)} aria-label={`${label} weight`} />
     </div>

@@ -21,7 +21,14 @@ const resume = {
 describe("toCandidateProfile", () => {
   it("maps the stored resume to the profile shape", () => {
     const p = toCandidateProfile(resume);
-    expect(p).toMatchObject({ _id: resume.id, name: "Mukesh Kanna", phoneNumber: "9000000000", title: resume.role, company: "Mphasis", skills: ["Selenium", "Java"] });
+    expect(p).toMatchObject({
+      _id: resume.id,
+      name: "Mukesh Kanna",
+      phoneNumber: "9000000000",
+      title: resume.role,
+      company: "Mphasis",
+      skills: ["Selenium", "Java"],
+    });
     expect(p.education).toEqual([{ degree: "B.E Computer Science", institution: "" }]);
   });
 

@@ -13,7 +13,10 @@ export function ModalHeader({ name, title, company }: { name: string; title?: st
           <span className="text-sm text-text-muted">{meta || "Candidate profile"}</span>
         </DialogPrimitive.Description>
       </div>
-      <DialogPrimitive.Close className="rounded-md p-1.5 text-text-muted hover:bg-white/[0.06] hover:text-text-primary" aria-label="Close profile">
+      <DialogPrimitive.Close
+        className="rounded-md p-1.5 text-text-muted hover:bg-white/[0.06] hover:text-text-primary"
+        aria-label="Close profile"
+      >
         <X className="h-5 w-5" aria-hidden />
       </DialogPrimitive.Close>
     </div>

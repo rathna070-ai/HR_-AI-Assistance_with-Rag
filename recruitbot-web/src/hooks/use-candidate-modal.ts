@@ -5,7 +5,15 @@ import { useUiStore } from "@/lib/stores/ui.store";
 // Modal state lives in the UI store so any result card can open the single
 // modal rendered by ChatPage.
 export function useCandidateModal() {
-  const { isModalOpen: isOpen, candidate, isCandidateLoading: loading, openModal, setCandidate, setCandidateLoading, closeModal } = useUiStore();
+  const {
+    isModalOpen: isOpen,
+    candidate,
+    isCandidateLoading: loading,
+    openModal,
+    setCandidate,
+    setCandidateLoading,
+    closeModal,
+  } = useUiStore();
 
   async function openCandidateModal(id: string) {
     openModal(id);

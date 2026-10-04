@@ -27,7 +27,11 @@ export function ChatTopbar() {
           {mode.label} · {mode.description}
         </p>
       </div>
-      <span className={cn("rounded-full px-3 py-1 text-xs font-medium", MODE_COLOURS[searchType].badge)} data-testid="mode-badge" data-mode={searchType}>
+      <span
+        className={cn("rounded-full px-3 py-1 text-xs font-medium", MODE_COLOURS[searchType].badge)}
+        data-testid="mode-badge"
+        data-mode={searchType}
+      >
         {mode.badge}
       </span>
     </header>

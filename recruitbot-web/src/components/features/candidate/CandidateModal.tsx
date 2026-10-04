@@ -1,5 +1,5 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { useCandidateModal } from "@/hooks/use-candidate-modal";
 import { CertificationsSection } from "./CertificationsSection";
 import { ContactSection } from "./ContactSection";
@@ -30,7 +30,7 @@ export function CandidateModal() {
         {isOpen && (
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay asChild forceMount>
-              <motion.div
+              <m.div
                 className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -40,7 +40,7 @@ export function CandidateModal() {
             </DialogPrimitive.Overlay>
             <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
               <DialogPrimitive.Content asChild forceMount aria-describedby={undefined}>
-                <motion.div
+                <m.div
                   className="pointer-events-auto max-h-[88vh] w-full max-w-[640px] overflow-y-auto rounded-2xl border border-white/[0.07] bg-bg-surface shadow-2xl focus:outline-none"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -59,14 +59,18 @@ export function CandidateModal() {
                       <div className="flex flex-col gap-6 p-6">
                         <ContactSection email={candidate.email} phoneNumber={candidate.phoneNumber} location={candidate.location} />
                         <SkillsSection skills={candidate.skills} />
-                        <ExperienceSection experience={candidate.experience} totalExperience={candidate.totalExperience} summary={candidate.experienceSummary} />
+                        <ExperienceSection
+                          experience={candidate.experience}
+                          totalExperience={candidate.totalExperience}
+                          summary={candidate.experienceSummary}
+                        />
                         <EducationSection education={candidate.education} />
                         <ProjectsSection projects={candidate.projects} />
                         <CertificationsSection certifications={candidate.certifications} />
                       </div>
                     </>
                   )}
-                </motion.div>
+                </m.div>
               </DialogPrimitive.Content>
             </div>
           </DialogPrimitive.Portal>

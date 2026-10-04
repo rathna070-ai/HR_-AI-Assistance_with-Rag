@@ -17,10 +17,11 @@ export function UploadResult({ result, onUploadAnother }: UploadResultProps) {
     : ["Resume uploaded successfully", "Embedding generated successfully", "MongoDB ingestion completed", "Vector search ready"];
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-score-hybrid/30 bg-bg-card p-6 shadow-xl" data-testid="ingestion-result">
-      <h2 className="text-lg font-semibold text-text-primary">
-        {duplicate ? "Resume already ingested" : "Resume ingestion completed"}
-      </h2>
+    <section
+      className="flex flex-col gap-4 rounded-2xl border border-score-hybrid/30 bg-bg-card p-6 shadow-xl"
+      data-testid="ingestion-result"
+    >
+      <h2 className="text-lg font-semibold text-text-primary">{duplicate ? "Resume already ingested" : "Resume ingestion completed"}</h2>
       <ul className="flex flex-col gap-2 text-sm">
         {items.map((item) => (
           <li key={item} className="flex items-center gap-2 text-text-primary">
@@ -33,7 +34,9 @@ export function UploadResult({ result, onUploadAnother }: UploadResultProps) {
         <dt className="text-text-muted">File</dt>
         <dd className="truncate text-text-primary">{result.fileName}</dd>
         <dt className="text-text-muted">Resume ID</dt>
-        <dd className="font-mono text-text-primary" data-testid="resume-id">{result.resumeId}</dd>
+        <dd className="font-mono text-text-primary" data-testid="resume-id">
+          {result.resumeId}
+        </dd>
       </dl>
       <button
         type="button"

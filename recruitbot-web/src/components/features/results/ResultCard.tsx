@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Briefcase, Mail, Phone } from "lucide-react";
 import { SNIPPET_LENGTH } from "@/lib/utils/constants";
 import { formatYears } from "@/lib/utils/formatters";
@@ -18,7 +18,7 @@ interface ResultCardProps {
 // One clickable card. Text from the API is rendered as text (React escapes it).
 export function ResultCard({ result, rank, searchType, onSelect, index = 0 }: ResultCardProps) {
   return (
-    <motion.button
+    <m.button
       type="button"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -53,6 +53,6 @@ export function ResultCard({ result, rank, searchType, onSelect, index = 0 }: Re
         </div>
       )}
       {result.content && <p className="mt-2 text-xs leading-relaxed text-text-muted">{truncate(result.content, SNIPPET_LENGTH)}</p>}
-    </motion.button>
+    </m.button>
   );
 }

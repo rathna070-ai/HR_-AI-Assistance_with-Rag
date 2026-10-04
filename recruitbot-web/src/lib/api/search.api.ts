@@ -25,7 +25,13 @@ async function rank(params: SearchRequest): Promise<{ hits: RankedHit[]; endpoin
   return {
     endpoint: "/v1/search/hybrid",
     degraded: data.degraded,
-    hits: fuseHybrid(toHits(data.bm25), toHits(data.vector), (params.bm25Weight ?? 0.5) * 100, (params.vectorWeight ?? 0.5) * 100, params.topK),
+    hits: fuseHybrid(
+      toHits(data.bm25),
+      toHits(data.vector),
+      (params.bm25Weight ?? 0.5) * 100,
+      (params.vectorWeight ?? 0.5) * 100,
+      params.topK,
+    ),
   };
 }
 

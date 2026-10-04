@@ -43,9 +43,7 @@ export function UploadDropzone({ selectedFile, disabled, onFileSelected }: Uploa
         <UploadCloud className="h-10 w-10 text-text-muted" aria-hidden />
       )}
       <div>
-        <p className="text-sm font-medium text-text-primary">
-          {selectedFile ? selectedFile.name : "Drag & drop a resume PDF here"}
-        </p>
+        <p className="text-sm font-medium text-text-primary">{selectedFile ? selectedFile.name : "Drag & drop a resume PDF here"}</p>
         <p className="mt-1 text-xs text-text-muted">
           {selectedFile ? `${(selectedFile.size / 1024).toFixed(0)} KB` : "PDF only, up to 5MB"}
         </p>
@@ -55,7 +53,6 @@ export function UploadDropzone({ selectedFile, disabled, onFileSelected }: Uploa
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
         className="rounded-lg border border-white/[0.12] px-4 py-2 text-sm text-text-primary transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed"
-        aria-label="Browse for a PDF file"
       >
         {selectedFile ? "Choose a different PDF" : "Browse / Select PDF"}
       </button>

@@ -22,7 +22,12 @@ describe("ingestion progress stages", () => {
     const stages = getIngestionStages({
       ...base,
       uploadProgress: 100,
-      successResult: { fileName: "a.pdf", status: "ingested", resumeId: "x", timings: { extractMs: 80, parseMs: 900, embeddingMs: 300, mongoInsertMs: 40 } },
+      successResult: {
+        fileName: "a.pdf",
+        status: "ingested",
+        resumeId: "x",
+        timings: { extractMs: 80, parseMs: 900, embeddingMs: 300, mongoInsertMs: 40 },
+      },
     });
     expect(stages.every((s) => s.state === "done")).toBe(true);
     expect(stages.find((s) => s.id === "parse")?.detail).toBe("900 ms");
@@ -37,8 +42,12 @@ describe("ingestion progress stages", () => {
     expect(states(getIngestionStages({ ...base, uploadProgress: 100, error: "Mistral embedding failed" }))).toBe(
       "upload:done extract:done parse:done embed:failed store:pending done:pending",
     );
-    expect(getIngestionStages({ ...base, uploadProgress: 100, error: "Resume extraction failed" }).find((s) => s.state === "failed")?.id).toBe("extract");
+    expect(
+      getIngestionStages({ ...base, uploadProgress: 100, error: "Resume extraction failed" }).find((s) => s.state === "failed")?.id,
+    ).toBe("extract");
     expect(getIngestionStages({ ...base, uploadProgress: 100, error: "Not a resume" }).find((s) => s.state === "failed")?.id).toBe("parse");
-    expect(getIngestionStages({ ...base, uploadProgress: 100, error: "ingestion failed" }).find((s) => s.state === "failed")?.id).toBe("store");
+    expect(getIngestionStages({ ...base, uploadProgress: 100, error: "ingestion failed" }).find((s) => s.state === "failed")?.id).toBe(
+      "store",
+    );
   });
 });

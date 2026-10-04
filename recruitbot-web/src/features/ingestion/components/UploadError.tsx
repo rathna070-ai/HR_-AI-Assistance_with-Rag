@@ -15,7 +15,9 @@ export function UploadError({ error, canRetry, onRetry, onChooseAnother }: Uploa
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" aria-hidden />
         <div className="text-sm">
           <p className="font-semibold text-text-primary">Upload failed</p>
-          <p className="text-red-300" data-testid="upload-error-title">{error.title}</p>
+          <p className="text-red-300" data-testid="upload-error-title">
+            {error.title}
+          </p>
           {error.message !== error.title && <p className="mt-1 text-xs text-text-muted">{error.message}</p>}
         </div>
       </div>

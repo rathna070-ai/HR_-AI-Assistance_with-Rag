@@ -4,7 +4,13 @@ import { failedStageFor, toIngestionError } from "./ingestionErrors";
 
 const httpError = (status: number, message: string) => {
   const config = { headers: new AxiosHeaders() };
-  return new AxiosError("Request failed", "ERR_BAD_RESPONSE", config, {}, { status, statusText: "", headers: {}, config, data: { success: false, message } });
+  return new AxiosError(
+    "Request failed",
+    "ERR_BAD_RESPONSE",
+    config,
+    {},
+    { status, statusText: "", headers: {}, config, data: { success: false, message } },
+  );
 };
 
 describe("toIngestionError", () => {
@@ -25,7 +31,11 @@ describe("toIngestionError", () => {
   });
 
   it("keeps unknown backend messages", () => {
-    expect(toIngestionError(httpError(503, "Service unavailable"))).toEqual({ kind: "unknown", title: "Upload failed", message: "Service unavailable" });
+    expect(toIngestionError(httpError(503, "Service unavailable"))).toEqual({
+      kind: "unknown",
+      title: "Upload failed",
+      message: "Service unavailable",
+    });
   });
 });
 

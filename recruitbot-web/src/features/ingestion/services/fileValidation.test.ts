@@ -16,7 +16,9 @@ describe("validateResumeFile", () => {
   });
 
   it("rejects non-PDF files", () => {
-    expect(validateResumeFile(pdf(10, "resume.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))).toBe("Only PDF allowed");
+    expect(validateResumeFile(pdf(10, "resume.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"))).toBe(
+      "Only PDF allowed",
+    );
     expect(validateResumeFile(pdf(10, "notes.txt", "text/plain"))).toBe("Only PDF allowed");
     expect(validateResumeFile(pdf(10, "fake.pdf", "image/png"))).toBe("Only PDF allowed");
   });

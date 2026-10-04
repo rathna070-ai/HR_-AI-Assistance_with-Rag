@@ -13,7 +13,13 @@ export function BrandLogo({ size = 36 }: { size?: number }) {
         </linearGradient>
       </defs>
       <circle cx="18" cy="18" r="18" fill={`url(#${gradientId})`} />
-      <path d="M11 22c2 2.5 4.3 3.5 7 3.5s5-1 7-3.5M13 14.5h.01M23 14.5h.01" stroke="white" strokeWidth="2.4" strokeLinecap="round" fill="none" />
+      <path
+        d="M11 22c2 2.5 4.3 3.5 7 3.5s5-1 7-3.5M13 14.5h.01M23 14.5h.01"
+        stroke="white"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        fill="none"
+      />
     </svg>
   );
 }

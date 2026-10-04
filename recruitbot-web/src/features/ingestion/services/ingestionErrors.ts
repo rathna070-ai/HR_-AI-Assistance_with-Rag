@@ -19,7 +19,12 @@ const KNOWN_BACKEND_ERRORS: { match: RegExp; kind: IngestionErrorKind; stage: In
   { match: /llm resume parsing failed|not a resume/i, kind: "parsing", stage: "parse", title: "Resume parsing failed" },
   { match: /mistral embedding failed/i, kind: "embedding", stage: "embed", title: "Embedding generation failed" },
   { match: /^ingestion failed/i, kind: "storage", stage: "store", title: "MongoDB ingestion failed" },
-  { match: /only pdf allowed|file too large|no file uploaded|unexpected field/i, kind: "rejected", stage: "upload", title: "Upload rejected" },
+  {
+    match: /only pdf allowed|file too large|no file uploaded|unexpected field/i,
+    kind: "rejected",
+    stage: "upload",
+    title: "Upload rejected",
+  },
 ];
 
 export const failedStageFor = (message: string): IngestionStageId | null =>
