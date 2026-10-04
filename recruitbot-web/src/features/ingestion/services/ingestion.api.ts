@@ -10,6 +10,8 @@ export const ingestionApi = {
     form.append("file", file);
     const response = await apiClient.post<IngestionResponse>("/v1/resume/inject", form, {
       timeout: INGESTION_TIMEOUT_MS,
+      // The upload card shows its own error state.
+      suppressErrorToast: true,
       onUploadProgress: (event) => {
         if (onUploadProgress && event.total) onUploadProgress(Math.round((event.loaded / event.total) * 100));
       },

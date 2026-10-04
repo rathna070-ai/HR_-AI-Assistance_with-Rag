@@ -1,0 +1,31 @@
+import type { SearchMode } from "@/types/search.types";
+
+export const SEARCH_MODES: Record<SearchMode, { label: string; badge: string; description: string; scoreLabel: string }> = {
+  vector: { label: "Vector Search", badge: "Vector", description: "Semantic similarity", scoreLabel: "Similarity" },
+  bm25: { label: "BM25 Keyword", badge: "BM25", description: "Exact keyword match", scoreLabel: "BM25 Score" },
+  hybrid: { label: "Hybrid", badge: "Hybrid", description: "Keywords + meaning", scoreLabel: "Hybrid" },
+};
+
+// Tailwind classes per mode (score colours from the design system).
+export const MODE_COLOURS: Record<SearchMode, { text: string; badge: string }> = {
+  vector: { text: "text-score-vector", badge: "bg-score-vector/20 text-score-vector" },
+  bm25: { text: "text-score-bm25", badge: "bg-score-bm25/20 text-score-bm25" },
+  hybrid: { text: "text-score-hybrid", badge: "bg-score-hybrid/20 text-score-hybrid" },
+};
+
+export const TOP_K_OPTIONS = [3, 5, 10, 20];
+
+export const WEIGHT_PRESETS: { bm25: number; vector: number }[] = [
+  { bm25: 50, vector: 50 },
+  { bm25: 70, vector: 30 },
+  { bm25: 30, vector: 70 },
+];
+
+export const SUGGESTIONS = [
+  { emoji: "🔍", label: "Selenium QA 3 yrs", query: "Selenium automation engineer 3 years" },
+  { emoji: "🐍", label: "Python ML dev", query: "Python developer with machine learning" },
+  { emoji: "☁️", label: "Java AWS backend", query: "Java backend developer AWS cloud" },
+  { emoji: "⚡", label: "Lead QA Cypress", query: "Lead QA engineer with Cypress and CI/CD" },
+];
+
+export const SNIPPET_LENGTH = 200;
