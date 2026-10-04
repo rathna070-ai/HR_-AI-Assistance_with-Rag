@@ -1,5 +1,5 @@
 import { EmptyState } from "@/components/common/EmptyState";
-import { useUiStore } from "@/lib/stores/ui.store";
+import { useCandidateModal } from "@/hooks/use-candidate-modal";
 import type { SearchMode, SearchResult } from "@/types/search.types";
 import { ResultCard } from "./ResultCard";
 import { ResultSummary } from "./ResultSummary";
@@ -13,7 +13,7 @@ interface ResultsListProps {
 
 export function ResultsList({ results, searchType, duration, query }: ResultsListProps) {
   // Cards open the shared candidate modal (rendered once by ChatPage).
-  const openModal = useUiStore((s) => s.openModal);
+  const { openCandidateModal } = useCandidateModal();
 
   return (
     <div className="flex flex-col gap-3" data-testid="results-list" data-query={query}>
@@ -22,7 +22,7 @@ export function ResultsList({ results, searchType, duration, query }: ResultsLis
         <EmptyState />
       ) : (
         results.map((result, i) => (
-          <ResultCard key={result.candidateId} result={result} rank={i + 1} searchType={searchType} onSelect={openModal} index={i} />
+          <ResultCard key={result.candidateId} result={result} rank={i + 1} searchType={searchType} onSelect={openCandidateModal} index={i} />
         ))
       )}
     </div>

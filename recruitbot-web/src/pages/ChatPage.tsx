@@ -1,3 +1,4 @@
+import { CandidateModal } from "@/components/features/candidate/CandidateModal";
 import { ChatMain } from "@/components/features/chat/ChatMain";
 import { AppShell } from "@/components/layout/AppShell";
 import { MobileDrawer } from "@/components/layout/MobileDrawer";
@@ -12,6 +13,7 @@ export function ChatPage() {
       <Sidebar />
       <MobileDrawer />
       <ChatMain onSubmit={submitQuery} />
+      <CandidateModal />
     </AppShell>
   );
 }
