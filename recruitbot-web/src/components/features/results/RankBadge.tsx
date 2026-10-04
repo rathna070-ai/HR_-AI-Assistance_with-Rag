@@ -5,7 +5,7 @@ export function RankBadge({ rank }: { rank: number }) {
     <span
       className={cn(
         "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-        rank <= 3 ? "bg-gradient-to-br from-primary to-accent text-white" : "bg-white/[0.08] text-text-muted",
+        rank <= 3 ? "bg-gradient-to-br from-primary to-accent text-white" : "bg-slate-100 text-text-muted",
       )}
       aria-label={`Rank ${rank}`}
     >

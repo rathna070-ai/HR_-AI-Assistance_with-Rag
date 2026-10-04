@@ -8,7 +8,7 @@ const ICONS: Record<StageState, React.ReactNode> = {
   active: <Loader2 className="h-4 w-4 animate-spin text-score-vector" aria-hidden />,
   pending: <Circle className="h-4 w-4 text-text-muted" aria-hidden />,
   skipped: <MinusCircle className="h-4 w-4 text-text-muted" aria-hidden />,
-  failed: <X className="h-4 w-4 text-red-400" aria-hidden />,
+  failed: <X className="h-4 w-4 text-red-600" aria-hidden />,
 };
 
 // Status line plus the ingestion pipeline stages.
@@ -25,14 +25,14 @@ export function UploadProgress() {
     );
   else if (successResult)
     status = (
-      <p className="text-score-hybrid">
+      <p className="text-score-hybrid-ink">
         {successResult.status === "ingested" ? "Resume ingested successfully" : "Resume already ingested"}
       </p>
     );
-  else if (error) status = <p className="text-red-400">{error.title}</p>;
+  else if (error) status = <p className="text-red-600">{error.title}</p>;
   else if (validationError)
     status = (
-      <p className="text-amber-400" role="alert">
+      <p className="text-amber-700" role="alert">
         {validationError}
       </p>
     );
@@ -45,7 +45,7 @@ export function UploadProgress() {
   else status = <p className="text-text-muted">No file selected</p>;
 
   return (
-    <div className="rounded-lg border border-white/[0.07] bg-bg-base/60 px-4 py-3 text-sm">
+    <div className="rounded-lg border border-line bg-bg-base px-4 py-3 text-sm">
       <div aria-live="polite">{status}</div>
       <ol className="mt-3 flex flex-col gap-2" aria-label="Ingestion progress" data-testid="ingestion-stages">
         {stages.map((stage) => (
@@ -54,7 +54,7 @@ export function UploadProgress() {
             <span
               className={cn(
                 stage.state === "pending" || stage.state === "skipped" ? "text-text-muted" : "text-text-primary",
-                stage.state === "failed" && "text-red-400",
+                stage.state === "failed" && "text-red-600",
               )}
             >
               {stage.label}

@@ -6,7 +6,7 @@ export function SkillsSection({ skills }: { skills?: string[] }) {
     <Section label="Skills" testId="skills-section">
       <div className="flex flex-wrap gap-1.5">
         {skills.map((skill) => (
-          <span key={skill} className="rounded bg-indigo-500/10 px-2 py-1 text-xs text-indigo-300">
+          <span key={skill} className="rounded bg-accent/10 px-2 py-1 text-xs text-indigo-700">
             {skill}
           </span>
         ))}

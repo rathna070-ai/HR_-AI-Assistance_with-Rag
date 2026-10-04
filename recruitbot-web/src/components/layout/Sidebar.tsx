@@ -1,9 +1,8 @@
 import { AnimatePresence } from "framer-motion";
-import { Upload } from "lucide-react";
+import { BookOpen, Upload } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BrandAvatar } from "@/components/common/BrandAvatar";
 import { SectionLabel } from "@/components/common/SectionLabel";
-import { ClearChatButton } from "@/components/features/sidebar/ClearChatButton";
 import { HybridWeightPanel } from "@/components/features/sidebar/HybridWeightPanel";
 import { ResultsLimitSelect } from "@/components/features/sidebar/ResultsLimitSelect";
 import { SearchModeNav } from "@/components/features/sidebar/SearchModeNav";
@@ -22,23 +21,28 @@ export function SidebarContent() {
       <AnimatePresence>{searchType === "hybrid" && <HybridWeightPanel />}</AnimatePresence>
       <SectionLabel className="mt-auto">Results limit</SectionLabel>
       <ResultsLimitSelect />
-      <ClearChatButton />
       {/* Keeps the ingestion feature reachable from the search UI. */}
       <Link
         to="/ingestion"
-        className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.12] px-4 py-2 text-sm text-text-primary transition-colors hover:bg-white/[0.06]"
+        className="flex items-center justify-center gap-2 rounded-lg border border-line px-4 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100"
       >
         <Upload className="h-4 w-4" aria-hidden />
         Upload resumes
       </Link>
-      <footer className="pt-2 text-xs text-text-muted">RecruitBot v2.0</footer>
+      <footer className="flex items-center justify-between gap-2 pt-2 text-xs text-text-muted">
+        <span>TalentLens AI v2.0</span>
+        <Link to="/help" className="flex items-center gap-1 font-medium text-primary hover:underline">
+          <BookOpen className="h-3.5 w-3.5" aria-hidden />
+          How it works
+        </Link>
+      </footer>
     </>
   );
 }
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-[260px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-white/[0.07] bg-bg-surface p-5 md:flex">
+    <aside className="hidden w-[260px] shrink-0 flex-col gap-4 overflow-y-auto border-r border-line bg-bg-surface p-5 md:flex">
       <SidebarContent />
     </aside>
   );

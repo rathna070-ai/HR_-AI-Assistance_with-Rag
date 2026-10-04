@@ -30,7 +30,7 @@ export function useSearch() {
       setResults(data.results, data.query);
       addBotMessage(<ResultsList results={data.results} searchType={mode} duration={data.duration} query={data.query} />);
     } catch {
-      if (stillCurrent()) addBotMessage(<p className="text-red-400">Search failed. Please try again.</p>);
+      if (stillCurrent()) addBotMessage(<p className="text-red-600">Search failed. Please try again.</p>);
     } finally {
       if (stillCurrent()) setSearching(false);
     }

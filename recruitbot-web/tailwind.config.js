@@ -7,20 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        // RecruitBot brand
-        primary: "#6366f1",
-        accent: "#ec4899",
+        // TalentLens AI brand
+        navy: "#0B1F3A",
+        primary: "#2563EB",
+        accent: "#6366F1",
+        success: "#10B981",
+        line: "#E2E8F0",
         // Backgrounds
-        "bg-base": "#0f0f13",
-        "bg-surface": "#18181f",
-        "bg-card": "#1e1e28",
+        "bg-base": "#F8FAFC",
+        "bg-surface": "#FFFFFF",
+        "bg-card": "#FFFFFF",
         // Text
-        "text-primary": "#f1f1f5",
-        "text-muted": "#8b8ba0",
-        // Search mode scores
-        "score-vector": "#818cf8",
-        "score-bm25": "#f472b6",
-        "score-hybrid": "#34d399",
+        "text-primary": "#0F172A",
+        "text-muted": "#64748B",
+        // Search mode colours. "ink" is a darker shade of the same hue for text
+        // on light backgrounds (WCAG AA contrast).
+        "score-vector": { DEFAULT: "#6366F1", ink: "#4338CA" },
+        "score-bm25": { DEFAULT: "#2563EB", ink: "#1D4ED8" },
+        "score-hybrid": { DEFAULT: "#10B981", ink: "#047857" },
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],

@@ -15,7 +15,7 @@ export function ExperienceSection({ experience = [], totalExperience, summary }:
       {totalExperience !== undefined && <p className="text-sm text-text-primary">{formatYears(totalExperience)} total</p>}
       {summary && <p className="text-sm leading-relaxed text-text-muted">{summary}</p>}
       {experience.length > 0 && (
-        <ol className="flex flex-col gap-3 border-l border-white/[0.1] pl-4">
+        <ol className="flex flex-col gap-3 border-l border-line pl-4">
           {experience.map((job, i) => (
             <li key={`${job.title}-${i}`} className="relative">
               <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary" aria-hidden />

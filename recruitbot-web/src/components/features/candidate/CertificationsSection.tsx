@@ -6,7 +6,7 @@ export function CertificationsSection({ certifications }: { certifications?: str
     <Section label="Certifications" testId="certifications-section">
       <div className="flex flex-wrap gap-1.5">
         {certifications.map((c) => (
-          <span key={c} className="rounded-full border border-white/[0.1] px-2.5 py-1 text-xs text-text-primary">
+          <span key={c} className="rounded-full border border-line px-2.5 py-1 text-xs text-text-primary">
             {c}
           </span>
         ))}

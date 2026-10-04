@@ -10,7 +10,7 @@ export function SuggestionChips({ onPick, disabled }: { onPick: (query: string) 
           disabled={disabled}
           onClick={() => onPick(s.query)}
           aria-label={`${s.label}: search for ${s.query}`}
-          className="rounded-full border border-white/[0.1] bg-bg-card px-3 py-1.5 text-xs text-text-primary transition-colors hover:border-indigo-400/40 hover:bg-indigo-500/10 disabled:opacity-40"
+          className="rounded-full border border-line bg-bg-card px-3 py-1.5 text-xs text-text-primary transition-colors hover:border-primary/40 hover:bg-primary/10 disabled:opacity-40"
         >
           <span aria-hidden>{s.emoji}</span> {s.label}
         </button>

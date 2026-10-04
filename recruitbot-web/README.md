@@ -1,4 +1,4 @@
-# RecruitBot Web
+# TalentLens AI Web
 
 React + TypeScript frontend for the HR resume backend in the parent folder: upload resumes (ingestion) and search candidates (retrieval).
 
@@ -6,6 +6,7 @@ React + TypeScript frontend for the HR resume backend in the parent folder: uplo
 |---|---|
 | `/` | Candidate search chat (Vector, BM25, Hybrid) |
 | `/ingestion` | Resume upload |
+| `/help` | How to use the app and how it works (linked from the sidebar footer) |
 
 ## Run locally
 

@@ -13,7 +13,7 @@ function LoadingSkeleton() {
   return (
     <div className="flex flex-col gap-4 p-6" data-testid="candidate-skeleton" aria-busy="true">
       {["w-1/2", "w-3/4", "w-full", "w-2/3", "w-full"].map((w, i) => (
-        <div key={i} className={`h-4 ${w} animate-pulse rounded bg-white/[0.08]`} />
+        <div key={i} className={`h-4 ${w} animate-pulse rounded bg-slate-200`} />
       ))}
     </div>
   );
@@ -31,7 +31,7 @@ export function CandidateModal() {
           <DialogPrimitive.Portal forceMount>
             <DialogPrimitive.Overlay asChild forceMount>
               <m.div
-                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
+                className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-md"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -41,7 +41,7 @@ export function CandidateModal() {
             <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4">
               <DialogPrimitive.Content asChild forceMount aria-describedby={undefined}>
                 <m.div
-                  className="pointer-events-auto max-h-[88vh] w-full max-w-[640px] overflow-y-auto rounded-2xl border border-white/[0.07] bg-bg-surface shadow-2xl focus:outline-none"
+                  className="pointer-events-auto max-h-[88vh] w-full max-w-[640px] overflow-y-auto rounded-2xl border border-line bg-bg-surface shadow-2xl focus:outline-none"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}

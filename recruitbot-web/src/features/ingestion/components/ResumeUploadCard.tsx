@@ -13,7 +13,7 @@ export function ResumeUploadCard() {
       {successResult ? (
         <UploadResult result={successResult} onUploadAnother={reset} />
       ) : (
-        <section className="flex flex-col gap-4 rounded-2xl border border-white/[0.07] bg-bg-card p-6 shadow-xl">
+        <section className="flex flex-col gap-4 rounded-2xl border border-line bg-bg-card p-6 shadow-sm">
           <UploadDropzone selectedFile={selectedFile} disabled={isUploading} onFileSelected={selectFile} />
           {/* Enabled without a file so an empty submit shows "Please select a file". */}
           <UploadButton isUploading={isUploading} onClick={upload} />

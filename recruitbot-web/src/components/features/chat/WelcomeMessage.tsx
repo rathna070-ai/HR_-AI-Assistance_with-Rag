@@ -6,7 +6,7 @@ export function WelcomeMessage() {
     // Shown on first paint, so it is not animated in.
     <BotBubble animate={false}>
       <div data-testid="welcome-message">
-        <p className="font-medium">Hi, I&apos;m RecruitBot. Describe the candidate you&apos;re looking for.</p>
+        <p className="font-medium">Hi, I&apos;m TalentLens AI. Describe the candidate you&apos;re looking for.</p>
         <p className="mt-2 text-text-muted">Pick a search mode in the sidebar:</p>
         <ul className="mt-2 flex flex-col gap-1.5 text-text-muted">
           <li className="flex items-center gap-2">

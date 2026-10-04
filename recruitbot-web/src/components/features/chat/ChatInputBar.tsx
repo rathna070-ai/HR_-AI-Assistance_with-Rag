@@ -1,5 +1,6 @@
 import { SendHorizontal } from "lucide-react";
 import { useEffect, useRef, type KeyboardEvent } from "react";
+import { ClearChatButton } from "./ClearChatButton";
 import { Textarea } from "@/components/ui/textarea";
 
 const MAX_LINES = 6;
@@ -36,9 +37,9 @@ export function ChatInputBar({ value, onChange, onSubmit, disabled }: ChatInputB
   };
 
   return (
-    <div className="border-t border-white/[0.07] px-4 py-3 md:px-8">
+    <div className="border-t border-line px-4 py-3 md:px-8">
       <div className="mx-auto max-w-3xl">
-        <div className="flex items-end gap-2 rounded-2xl border border-white/[0.1] bg-bg-card px-3 py-2 focus-within:border-indigo-400/40">
+        <div className="flex items-end gap-2 rounded-2xl border border-line bg-bg-card px-3 py-2 focus-within:border-primary/40">
           <Textarea
             ref={ref}
             rows={1}
@@ -49,6 +50,7 @@ export function ChatInputBar({ value, onChange, onSubmit, disabled }: ChatInputB
             aria-label="Search query"
             className="max-h-[120px] py-1.5 leading-5"
           />
+          <ClearChatButton />
           <button
             type="button"
             onClick={submit}

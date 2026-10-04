@@ -16,7 +16,7 @@ export function HybridWeightPanel() {
       className="overflow-hidden"
       data-testid="hybrid-weight-panel"
     >
-      <div className="flex flex-col gap-3 rounded-lg border border-white/[0.07] bg-bg-card p-3">
+      <div className="flex flex-col gap-3 rounded-lg border border-line bg-bg-card p-3">
         <p className="text-xs font-medium text-text-primary">Search Weights</p>
         <WeightRow label="BM25" value={bm25Weight} onChange={handleBm25Change} />
         <WeightRow label="Vector" value={vectorWeight} onChange={handleVectorChange} />
@@ -31,9 +31,7 @@ export function HybridWeightPanel() {
                 aria-label={`Preset BM25 ${bm25}% / Vector ${vector}%`}
                 className={cn(
                   "flex-1 rounded-full border px-2 py-1 text-xs transition-colors",
-                  active
-                    ? "border-indigo-400/40 bg-indigo-500/20 text-text-primary"
-                    : "border-white/[0.1] text-text-muted hover:text-text-primary",
+                  active ? "border-primary/40 bg-primary/10 text-text-primary" : "border-line text-text-muted hover:text-text-primary",
                 )}
               >
                 {bm25}/{vector}

@@ -1,3 +1,4 @@
+import { Blend, KeyRound, Sparkles } from "lucide-react";
 import type { SearchMode } from "@/types/search.types";
 
 export const SEARCH_MODES: Record<SearchMode, { label: string; badge: string; description: string; scoreLabel: string }> = {
@@ -6,12 +7,7 @@ export const SEARCH_MODES: Record<SearchMode, { label: string; badge: string; de
   hybrid: { label: "Hybrid", badge: "Hybrid", description: "Keywords + meaning", scoreLabel: "Hybrid" },
 };
 
-// Tailwind classes per mode (score colours from the design system).
-export const MODE_COLOURS: Record<SearchMode, { text: string; badge: string }> = {
-  vector: { text: "text-score-vector", badge: "bg-score-vector/20 text-score-vector" },
-  bm25: { text: "text-score-bm25", badge: "bg-score-bm25/20 text-score-bm25" },
-  hybrid: { text: "text-score-hybrid", badge: "bg-score-hybrid/20 text-score-hybrid" },
-};
+export const MODE_ICONS: Record<SearchMode, typeof Sparkles> = { vector: Sparkles, bm25: KeyRound, hybrid: Blend };
 
 export const TOP_K_OPTIONS = [3, 5, 10, 20];
 

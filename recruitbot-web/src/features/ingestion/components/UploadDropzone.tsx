@@ -33,7 +33,7 @@ export function UploadDropzone({ selectedFile, disabled, onFileSelected }: Uploa
       onDrop={handleDrop}
       className={cn(
         "flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed px-6 py-10 text-center transition-colors",
-        isDragging ? "border-primary bg-primary/10" : "border-white/[0.12] bg-bg-base/60",
+        isDragging ? "border-primary bg-primary/10" : "border-line bg-bg-base",
         disabled && "opacity-60",
       )}
     >
@@ -52,7 +52,7 @@ export function UploadDropzone({ selectedFile, disabled, onFileSelected }: Uploa
         type="button"
         disabled={disabled}
         onClick={() => inputRef.current?.click()}
-        className="rounded-lg border border-white/[0.12] px-4 py-2 text-sm text-text-primary transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed"
+        className="rounded-lg border border-line px-4 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100 disabled:cursor-not-allowed"
       >
         {selectedFile ? "Choose a different PDF" : "Browse / Select PDF"}
       </button>

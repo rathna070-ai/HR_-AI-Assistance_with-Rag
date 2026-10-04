@@ -18,7 +18,7 @@ export function UploadResult({ result, onUploadAnother }: UploadResultProps) {
 
   return (
     <section
-      className="flex flex-col gap-4 rounded-2xl border border-score-hybrid/30 bg-bg-card p-6 shadow-xl"
+      className="flex flex-col gap-4 rounded-2xl border border-score-hybrid/30 bg-bg-card p-6 shadow-sm"
       data-testid="ingestion-result"
     >
       <h2 className="text-lg font-semibold text-text-primary">{duplicate ? "Resume already ingested" : "Resume ingestion completed"}</h2>
@@ -30,7 +30,7 @@ export function UploadResult({ result, onUploadAnother }: UploadResultProps) {
           </li>
         ))}
       </ul>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-bg-base/60 px-4 py-3 text-xs">
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-lg bg-bg-base px-4 py-3 text-xs">
         <dt className="text-text-muted">File</dt>
         <dd className="truncate text-text-primary">{result.fileName}</dd>
         <dt className="text-text-muted">Resume ID</dt>
@@ -41,7 +41,7 @@ export function UploadResult({ result, onUploadAnother }: UploadResultProps) {
       <button
         type="button"
         onClick={onUploadAnother}
-        className="flex items-center justify-center gap-2 rounded-lg border border-white/[0.12] px-4 py-2 text-sm text-text-primary transition-colors hover:bg-white/[0.06]"
+        className="flex items-center justify-center gap-2 rounded-lg border border-line px-4 py-2 text-sm text-text-primary transition-colors hover:bg-slate-100"
         aria-label="Upload another resume"
       >
         <RotateCcw className="h-4 w-4" aria-hidden />

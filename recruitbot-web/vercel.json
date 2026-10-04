@@ -6,6 +6,6 @@
   "framework": "vite",
   "rewrites": [{ "source": "/((?!assets/).*)", "destination": "/index.html" }],
   "env": {
-    "VITE_API_BASE_URL": "@recruitbot_api_base_url"
+    "VITE_API_BASE_URL": "@talentlens_api_base_url"
   }
 }

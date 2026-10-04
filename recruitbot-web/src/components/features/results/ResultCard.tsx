@@ -25,7 +25,7 @@ export function ResultCard({ result, rank, searchType, onSelect, index = 0 }: Re
       transition={{ delay: index * 0.06 }}
       onClick={() => onSelect(result.candidateId)}
       aria-label={`View profile of ${result.name}`}
-      className="w-full rounded-xl border border-white/[0.07] bg-bg-base/60 p-4 text-left transition-shadow hover:border-white/[0.12] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="w-full rounded-xl border border-line bg-bg-base p-4 text-left transition-shadow hover:border-slate-300 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       data-testid="result-card"
     >
       <div className="flex items-center gap-3">
@@ -36,7 +36,7 @@ export function ResultCard({ result, rank, searchType, onSelect, index = 0 }: Re
       {(result.experienceYears !== undefined || result.email || result.phoneNumber) && (
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
           {result.experienceYears !== undefined && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2 py-0.5 text-text-primary">
+            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-text-primary">
               <Briefcase className="h-3 w-3" aria-hidden /> {formatYears(result.experienceYears)}
             </span>
           )}
