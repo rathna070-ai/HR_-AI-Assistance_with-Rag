@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { useIngestionStore } from "./ingestion.store";
 
 const file = new File(["%PDF-1.4"], "resume.pdf", { type: "application/pdf" });
+const extractionError = { kind: "extraction" as const, title: "PDF extraction failed", message: "Resume extraction failed" };
 const result = { fileName: "resume.pdf", status: "ingested" as const, resumeId: "6abba27fa24280e1b4ab36ac", timings: {} };
 
 describe("ingestion store", () => {
@@ -31,14 +32,14 @@ describe("ingestion store", () => {
     const s = useIngestionStore.getState();
     s.selectFile(file);
     s.startUpload();
-    s.uploadFailed("Resume extraction failed");
-    expect(useIngestionStore.getState()).toMatchObject({ isUploading: false, error: "Resume extraction failed", selectedFile: file });
+    s.uploadFailed(extractionError);
+    expect(useIngestionStore.getState()).toMatchObject({ isUploading: false, error: extractionError, selectedFile: file });
   });
 
   it("clears the stale status when a new file is selected", () => {
     const s = useIngestionStore.getState();
     s.selectFile(file);
-    s.uploadFailed("Resume extraction failed");
+    s.uploadFailed(extractionError);
     s.selectFile(new File(["%PDF"], "other.pdf", { type: "application/pdf" }));
     expect(useIngestionStore.getState().error).toBeNull();
     expect(useIngestionStore.getState().successResult).toBeNull();

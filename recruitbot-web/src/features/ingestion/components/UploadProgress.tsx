@@ -14,7 +14,7 @@ const ICONS: Record<StageState, React.ReactNode> = {
 // Status line plus the ingestion pipeline stages.
 export function UploadProgress() {
   const { selectedFile, isUploading, uploadProgress, successResult, error, validationError } = useIngestionStore();
-  const stages = getIngestionStages({ isUploading, uploadProgress, successResult, error });
+  const stages = getIngestionStages({ isUploading, uploadProgress, successResult, error: error?.message ?? null });
 
   let status;
   if (isUploading)
@@ -25,7 +25,7 @@ export function UploadProgress() {
         {successResult.status === "ingested" ? "Resume ingested successfully" : "Resume already ingested"}
       </p>
     );
-  else if (error) status = <p className="text-red-400">{error}</p>;
+  else if (error) status = <p className="text-red-400">{error.title}</p>;
   else if (validationError)
     status = (
       <p className="text-amber-400" role="alert">

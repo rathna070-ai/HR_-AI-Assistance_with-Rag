@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { IngestionError } from "../services/ingestionErrors";
 import type { IngestionResult } from "../types/ingestion.types";
 
 // Ingestion-only UI state. It never touches the retrieval/search stores.
@@ -7,7 +8,7 @@ export interface IngestionState {
   isUploading: boolean;
   uploadProgress: number; // 0-100, bytes sent to the backend
   successResult: IngestionResult | null;
-  error: string | null;
+  error: IngestionError | null;
   validationError: string | null;
 
   selectFile: (file: File) => void;
@@ -15,7 +16,7 @@ export interface IngestionState {
   startUpload: () => void;
   setUploadProgress: (percent: number) => void;
   uploadSucceeded: (result: IngestionResult) => void;
-  uploadFailed: (error: string) => void;
+  uploadFailed: (error: IngestionError) => void;
   reset: () => void;
 }
 
