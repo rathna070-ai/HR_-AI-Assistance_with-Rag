@@ -1,16 +1,18 @@
-interface UploadProgressProps {
-  selectedFile: File | null;
-  isUploading: boolean;
-  successMessage: string | null;
-  errorMessage: string | null;
-}
+import { useIngestionStore } from "../stores/ingestion.store";
 
-// Status area under the upload controls; reflects the real API call.
-export function UploadProgress({ selectedFile, isUploading, successMessage, errorMessage }: UploadProgressProps) {
+// Status area under the upload controls; reads the ingestion store.
+export function UploadProgress() {
+  const { selectedFile, isUploading, uploadProgress, successResult, error } = useIngestionStore();
+
   let content;
-  if (isUploading) content = <p className="text-text-primary">Uploading...</p>;
-  else if (successMessage) content = <p className="text-score-hybrid">{successMessage}</p>;
-  else if (errorMessage) content = <p className="text-red-400">{errorMessage}</p>;
+  if (isUploading) content = <p className="text-text-primary">Uploading... {uploadProgress}%</p>;
+  else if (successResult)
+    content = (
+      <p className="text-score-hybrid">
+        {successResult.status === "ingested" ? "Resume ingested successfully" : "Resume already ingested"}
+      </p>
+    );
+  else if (error) content = <p className="text-red-400">{error}</p>;
   else if (selectedFile)
     content = (
       <p className="text-text-primary">
