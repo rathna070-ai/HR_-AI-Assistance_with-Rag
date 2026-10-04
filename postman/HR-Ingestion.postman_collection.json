@@ -1,0 +1,2162 @@
+{
+  "info": {
+    "name": "HR Resume Ingestion - Phase-wise Verification",
+    "description": "Verifies every phase of Resume_Ingestion_Architecture_Phasewise.md (Phases 1-16) and the batch workflow in Batch_Ingestion_Flow.md.\n\nBefore running:\n1. Start the server: npm run dev (http://localhost:3000).\n2. Set the collection variable resumePath to a real resume PDF on your machine.\n3. Requests that upload test-files/... resolve relative to Postman's working directory; if a file shows as missing, re-select postman/test-files/blank.pdf or not-a-pdf.txt in the request body.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "resumePath",
+      "value": "C:/Users/rathn/Downloads/Resumes/Resumes (1)/Resumes/Vidya QA Resume (1).pdf"
+    },
+    {
+      "key": "resumeId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Phase 1 - Project Setup",
+      "description": "Server runs inside the single backend (npm run dev, port 3000).",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status is ok', () => pm.expect(pm.response.json()).to.eql({ status: 'ok' }));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 - PDF Upload API",
+      "description": "POST /v1/resume/upload with form-data field 'file'. PDF only, max 5MB.",
+      "item": [
+        {
+          "name": "Upload resume PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/upload",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('success is true', () => pm.expect(body.success).to.be.true);",
+                  "pm.test('file saved in uploads/', () => pm.expect(body.data.filePath).to.include('uploads'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Upload non-PDF is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/upload",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/not-a-pdf.txt"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('Only PDF allowed', () => pm.expect(pm.response.json().message).to.eql('Only PDF allowed'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 3 - PDF Text Extraction",
+      "description": "POST /v1/resume/extract. Text layer first; scanned PDFs are OCR'd. Blank PDFs fail with 'Resume extraction failed'.",
+      "item": [
+        {
+          "name": "Extract text from resume",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/extract",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "extract"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const result = pm.response.json().data;",
+                  "pm.test('rawText is not empty', () => pm.expect(result.rawText.length).to.be.above(0));",
+                  "pm.test('pageCount >= 1', () => pm.expect(result.pageCount).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Blank PDF fails extraction",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/extract",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "extract"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/blank.pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));",
+                  "pm.test('Resume extraction failed', () => pm.expect(pm.response.json().message).to.eql('Resume extraction failed'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 4 - Text Cleaning",
+      "description": "POST /v1/resume/clean with a PDF or JSON { rawText }.",
+      "item": [
+        {
+          "name": "Clean resume PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/clean",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "clean"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const text = pm.response.json().data.cleanedText;",
+                  "pm.test('no \\\\u0000 placeholders left', () => pm.expect(text).to.not.include('\\u0000'));",
+                  "pm.test('no blank lines', () => pm.expect(text).to.not.match(/\\n\\s*\\n/));",
+                  "pm.test('no double spaces', () => pm.expect(text).to.not.include('  '));",
+                  "pm.test('no tabs', () => pm.expect(text).to.not.include('\\t'));",
+                  "pm.test('no two identical lines in a row', () => {",
+                  "  const lines = text.split('\\n');",
+                  "  lines.forEach((l, i) => pm.expect(l.toLowerCase()).to.not.eql((lines[i - 1] || '').toLowerCase()));",
+                  "});",
+                  "if (text.includes('Vidya')) {",
+                  "  ['software testing', 'data validation', 'fintech', 'financial', 'Confluence', 'efficiently', 'bottlenecks', 'offshore', 'Identified', 'platforms']",
+                  "    .forEach(w => pm.test(`ligature restored: ${w}`, () => pm.expect(text).to.include(w)));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clean raw text (JSON)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/clean",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "clean"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"ASHWIN   P\\r\\n\\r\\n\\r\\n• QA  Engineer ★\\nQA Engineer\\n\\n\\tEmail: ashwin@gmail.com ✉\\n“C#”, C++ – Node.js\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('cleanedText matches expected', () => pm.expect(pm.response.json().data.cleanedText)",
+                  "  .to.eql('ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com\\n\"C#\", C++ - Node.js'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clean with empty body is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/clean",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "clean"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clean blank PDF fails",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/clean",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "clean"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/blank.pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 5 - Algorithm Resume Parser",
+      "description": "POST /v1/resume/parse. Uses the algorithm parser, or the LLM parser when USE_LLM_PARSER=true.",
+      "item": [
+        {
+          "name": "Parse resume PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('has every field', () => pm.expect(d).to.include.keys('name', 'email', 'phone', 'location', 'skills', 'company', 'role', 'education', 'totalExperience'));",
+                  "pm.test('skills is an array', () => pm.expect(d.skills).to.be.an('array'));",
+                  "pm.test('parser reported', () => pm.expect(['algorithm', 'llm']).to.include(d.parser));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Parse raw text (spec example)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com | Phone: +91 98765 43210 | Chennai\\nSUMMARY\\nQA Engineer with 3 years 4 months of experience in Java, Selenium and API Testing.\\nEXPERIENCE\\nQA Engineer | TCS | Jan 2023 - Present\\nEDUCATION\\nB.E Computer Science, Anna University, 2019\\nSKILLS\\nJava, Selenium, Playwright, Postman, SQL, MySQL, JavaScript, Jenkins\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('parser follows USE_LLM_PARSER (algorithm or llm)', () => pm.expect(['algorithm', 'llm']).to.include(pm.response.json().data.parser));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('name', () => pm.expect(d.name).to.eql('ASHWIN P'));",
+                  "pm.test('email', () => pm.expect(d.email).to.eql('ashwin@gmail.com'));",
+                  "pm.test('phone normalised to 10 digits', () => pm.expect(d.phone).to.eql('9876543210'));",
+                  "pm.test('location', () => pm.expect(d.location).to.eql('Chennai'));",
+                  "pm.test('company', () => pm.expect(d.company).to.eql('TCS'));",
+                  "pm.test('role', () => pm.expect(d.role).to.eql('QA Engineer'));",
+                  "pm.test('education', () => pm.expect(d.education).to.eql('B.E Computer Science'));",
+                  "pm.test('3 years 4 months = 3.3', () => pm.expect(d.totalExperience).to.eql(3.3));",
+                  "pm.test('skills include Java and Selenium', () => pm.expect(d.skills).to.include.members(['Java', 'Selenium']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Parse with empty body is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Parse blank PDF fails",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/blank.pdf"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('422 Unprocessable Entity', () => pm.response.to.have.status(422));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 6 - Regex Utilities",
+      "description": "Email, phone and experience regexes, checked through /v1/resume/parse.",
+      "item": [
+        {
+          "name": "Phone and experience formats",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"PRIYA K\\nSoftware Tester\\npriya.k@gmail.com\\n(+91) 87600 28904\\nChennai\\nSoftware Tester with 7+ years of experience in Selenium.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('spaced +91 phone normalised', () => pm.expect(d.phone).to.eql('8760028904'));",
+                  "pm.test('7+ years parsed', () => pm.expect(d.totalExperience).to.eql(7));",
+                  "pm.test('email', () => pm.expect(d.email).to.eql('priya.k@gmail.com'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Experience from date ranges",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "parse"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"RAHUL S\\nrahul.s@gmail.com\\nWORK EXPERIENCE\\nSoftware Engineer\\nInfosys\\nJan 2020 - Dec 2021\\nSenior Software Engineer\\nWipro\\nJan 2022 - Dec 2023\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('two 2-year jobs = 4 years', () => pm.expect(d.totalExperience).to.eql(4));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 7 - Skills Detection",
+      "description": "POST /v1/resume/skills. Whole-word matching (Java is not JavaScript).",
+      "item": [
+        {
+          "name": "Detect skills from PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/skills",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "skills"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('skills array', () => pm.expect(d.skills).to.be.an('array'));",
+                  "pm.test('skillCount matches', () => pm.expect(d.skillCount).to.eql(d.skills.length));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Word boundaries (Java vs JavaScript, SQL vs MySQL)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/skills",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "skills"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"Worked with JavaScript and MySQL, Selenium WebDriver, RestAssured.\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const skills = pm.response.json().data.skills;",
+                  "pm.test('JavaScript found', () => pm.expect(skills).to.include('JavaScript'));",
+                  "pm.test('Java not matched inside JavaScript', () => pm.expect(skills).to.not.include('Java'));",
+                  "pm.test('SQL not matched inside MySQL', () => pm.expect(skills).to.not.include('SQL'));",
+                  "pm.test('aliases map to canonical names', () => pm.expect(skills).to.include.members(['Selenium', 'Rest Assured']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 8 - Optional LLM Parser",
+      "description": "POST /v1/resume/llm-parse (Groq). Needs USE_LLM_PARSER=true. Also returns jobTitles and experienceSummary, and rejects documents that are not resumes.",
+      "item": [
+        {
+          "name": "LLM parse raw text",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/llm-parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "llm-parse"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com | Phone: +91 98765 43210 | Chennai\\nSUMMARY\\nQA Engineer with 3 years 4 months of experience in Java, Selenium and API Testing.\\nEXPERIENCE\\nQA Engineer | TCS | Jan 2023 - Present\\nEDUCATION\\nB.E Computer Science, Anna University, 2019\\nSKILLS\\nJava, Selenium, Playwright, Postman, SQL, MySQL, JavaScript, Jenkins\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 400) {",
+                  "  pm.test('disabled message', () => pm.expect(pm.response.json().message).to.include('USE_LLM_PARSER'));",
+                  "} else {",
+                  "  pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "  const d = pm.response.json().data;",
+                  "  pm.test('parser is llm', () => pm.expect(d.parser).to.eql('llm'));",
+                  "  pm.test('email', () => pm.expect(d.email).to.eql('ashwin@gmail.com'));",
+                  "  pm.test('phone', () => pm.expect(d.phone).to.eql('9876543210'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LLM parse resume PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/llm-parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "llm-parse"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 or 400 (disabled)', () => pm.expect([200, 400]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "LLM parse returns jobTitles and experienceSummary",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com\\nEXPERIENCE\\nQA Engineer | TCS | Jan 2023 - Present\\nJunior Tester | Infosys | Jun 2020 - Dec 2022\\nSKILLS\\nJava, Selenium\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/llm-parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "llm-parse"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('job titles', () => pm.expect(d.jobTitles).to.include.members(['QA Engineer', 'Junior Tester']));",
+                  "pm.test('experience summary', () => pm.expect(d.experienceSummary).to.be.a('string'));",
+                  "pm.test('no gendered pronouns', () => pm.expect(/\\b(he|she|his|her|him)\\b/i.test(d.experienceSummary)).to.be.false);",
+                  "pm.test('Present counted up to today (more than 5 years)', () => pm.expect(d.totalExperience).to.be.above(5));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Document that is not a resume is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"Job Description. Job Title: Admin Support. Location: Chennai. Responsibilities: manage office supplies, schedule meetings. Requirements: 1-3 years experience, MS Office.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/llm-parse",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "llm-parse"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Not a resume\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 9 - Mistral Embedding Generation",
+      "description": "POST /v1/resume/embed. mistral-embed, 1024 dimensions.",
+      "item": [
+        {
+          "name": "Embed resume PDF",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/embed",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "embed"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('model', () => pm.expect(d.embeddingModel).to.eql('mistral-embed'));",
+                  "pm.test('1024 dimensions', () => { pm.expect(d.embeddingDimension).to.eql(1024); pm.expect(d.embedding).to.have.lengthOf(1024); });",
+                  "pm.test('numbers', () => pm.expect(d.embedding.every(n => typeof n === 'number')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Embed raw text",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/embed",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "embed"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rawText\": \"ASHWIN P\\nQA Engineer\\nEmail: ashwin@gmail.com | Phone: +91 98765 43210 | Chennai\\nSUMMARY\\nQA Engineer with 3 years 4 months of experience in Java, Selenium and API Testing.\\nEXPERIENCE\\nQA Engineer | TCS | Jan 2023 - Present\\nEDUCATION\\nB.E Computer Science, Anna University, 2019\\nSKILLS\\nJava, Selenium, Playwright, Postman, SQL, MySQL, JavaScript, Jenkins\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('1024 dimensions', () => pm.expect(d.embedding).to.have.lengthOf(1024));",
+                  "pm.test('parsed fields returned too', () => pm.expect(d.name).to.eql('ASHWIN P'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Embed with empty body is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/embed",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "embed"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 10 - MongoDB Ingestion",
+      "description": "Stored document in the resumes collection (hr_app database). The doc's POST /v1/resume/store endpoint is not implemented; storing happens inside POST /v1/resume/inject (Phase 11). These requests read a stored document back. The embedding is stored but never returned by the API.",
+      "item": [
+        {
+          "name": "Find a stored resume",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes?page=1&limit=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('at least one stored resume', () => pm.expect(d.total).to.be.above(0));",
+                  "pm.collectionVariables.set('resumeId', d.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stored document has the final fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes/{{resumeId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes",
+                "{{resumeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('final document fields', () => pm.expect(d).to.include.all.keys('fileName', 'rawText', 'name', 'email', 'phone', 'location', 'company', 'role', 'education', 'totalExperience', 'skills', 'embeddingModel', 'embeddingDimension'));",
+                  "pm.test('mistral-embed, 1024 dimensions', () => { pm.expect(d.embeddingModel).to.eql('mistral-embed'); pm.expect(d.embeddingDimension).to.eql(1024); });",
+                  "pm.test('embedding not returned', () => pm.expect(d).to.not.have.property('embedding'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 11 - Resume Ingestion Service",
+      "description": "POST /v1/resume/inject: PDF -> extract -> clean -> parse -> embed -> MongoDB. The same file again returns 'Resume already ingested'.",
+      "item": [
+        {
+          "name": "Inject resume PDF",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 new or 200 duplicate', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('status ingested or duplicate', () => pm.expect(d.status).to.be.oneOf(['ingested', 'duplicate']));",
+                  "pm.test('resumeId returned', () => pm.expect(d.resumeId).to.match(/^[0-9a-f]{24}$/));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Same file again is a duplicate",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('duplicate', () => pm.expect(pm.response.json().data.status).to.eql('duplicate'));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql('Resume already ingested'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 12 - Error Handling",
+      "description": "Spec messages: Only PDF allowed, Resume extraction failed, Mistral embedding failed, ingestion failed. The last two need a broken Mistral key or MongoDB, so only the first two are checked here.",
+      "item": [
+        {
+          "name": "Inject non-PDF: Only PDF allowed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/not-a-pdf.txt"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Only PDF allowed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inject blank PDF: Resume extraction failed",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "test-files/blank.pdf"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('422', () => pm.response.to.have.status(422));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Resume extraction failed\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inject without file",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"No file uploaded. Send a PDF in form-data field 'file'\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 13 - Logging",
+      "description": "Each ingested resume logs one JSON line: requestId, fileName, extractMs, parseMs, embeddingMs, mongoInsertMs (check the npm run dev console). Every response also carries an X-Request-Id header.",
+      "item": [
+        {
+          "name": "Inject returns step timings and a request id",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "{{resumePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 or 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('X-Request-Id header', () => pm.expect(pm.response.headers.get('X-Request-Id')).to.be.a('string').and.not.empty);",
+                  "const d = pm.response.json().data;",
+                  "pm.test('timings object', () => pm.expect(d.timings).to.be.an('object'));",
+                  "if (d.status === 'ingested') pm.test('all step timings', () => pm.expect(d.timings).to.include.all.keys('extractMs', 'parseMs', 'embeddingMs', 'mongoInsertMs'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 14 - Vector Search Index",
+      "description": "The Atlas index (resume_vector) is created with npm run search:index, not an API. When it is queryable, semantic search runs in 'atlas' mode instead of 'local'.",
+      "item": [
+        {
+          "name": "Search uses the Atlas vector index",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"QA automation engineer\",\n  \"limit\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('mode atlas', () => pm.expect(pm.response.json().data.mode).to.eql('atlas'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 15 - Semantic Resume Search",
+      "description": "POST /v1/resume/search with optional skills, experience and location filters.",
+      "item": [
+        {
+          "name": "Search resumes",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"QA automation engineer with Selenium and Java\",\n  \"limit\": 5\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('mode is atlas or local', () => pm.expect(['atlas', 'local']).to.include(d.mode));",
+                  "pm.test('at most 5 results', () => pm.expect(d.results.length).to.be.at.most(5).and.eql(d.count));",
+                  "pm.test('sorted by score', () => d.results.forEach((r, i) => i && pm.expect(r.score).to.be.at.most(d.results[i - 1].score)));",
+                  "pm.test('no embedding or rawText', () => d.results.forEach(r => pm.expect(r).to.not.have.any.keys('embedding', 'rawText')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search with filters",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"software tester\",\n  \"limit\": 5,\n  \"filters\": {\n    \"skills\": [\n      \"selenium\",\n      \"java\"\n    ],\n    \"minExperience\": 2,\n    \"maxExperience\": 6,\n    \"location\": \"chennai\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.response.json().data.results.forEach(r => {",
+                  "  pm.test(`${r.id} has Selenium and Java`, () => pm.expect(r.skills).to.include.members(['Selenium', 'Java']));",
+                  "  pm.test(`${r.id} has 2-6 years`, () => pm.expect(r.totalExperience).to.be.within(2, 6));",
+                  "  pm.test(`${r.id} is in Chennai`, () => pm.expect(r.location.toLowerCase()).to.include('chennai'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search without query is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"query is required\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search with limit 99 is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"tester\",\n  \"limit\": 99\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"limit must be an integer between 1 and 50\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search with min > max experience is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "search"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"tester\",\n  \"filters\": {\n    \"minExperience\": 5,\n    \"maxExperience\": 2\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"filters.minExperience must not be greater than filters.maxExperience\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Phase 16 - Resume Management APIs",
+      "description": "GET /v1/resumes, GET /v1/resumes/:id, DELETE /v1/resumes/:id. Only an unknown id is deleted here, so no real data is removed.",
+      "item": [
+        {
+          "name": "List resumes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes?page=1&limit=5",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('at most 5 items', () => pm.expect(d.items.length).to.be.at.most(5));",
+                  "pm.test('total is a number', () => pm.expect(d.total).to.be.a('number'));",
+                  "pm.test('no embedding or rawText', () => d.items.forEach(r => pm.expect(r).to.not.have.any.keys('embedding', 'rawText')));",
+                  "if (d.items.length) pm.collectionVariables.set('resumeId', d.items[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List resumes by skill and location",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes?skill=selenium&location=chennai&limit=10",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes"
+              ],
+              "query": [
+                {
+                  "key": "skill",
+                  "value": "selenium"
+                },
+                {
+                  "key": "location",
+                  "value": "chennai"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.response.json().data.items.forEach(r => pm.test(`${r.id} matches`, () => {",
+                  "  pm.expect(r.skills).to.include('Selenium');",
+                  "  pm.expect(r.location.toLowerCase()).to.include('chennai');",
+                  "}));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List with limit 500 is rejected",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes?limit=500",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "500"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"limit must be an integer between 1 and 100\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get resume by id",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes/{{resumeId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes",
+                "{{resumeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('same id', () => pm.expect(d.id).to.eql(pm.collectionVariables.get('resumeId')));",
+                  "pm.test('has rawText, no embedding', () => { pm.expect(d.rawText).to.be.a('string'); pm.expect(d).to.not.have.property('embedding'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get invalid id is rejected",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes/not-an-id",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes",
+                "not-an-id"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Invalid resume id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get unknown id is 404",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes/000000000000000000000000",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes",
+                "000000000000000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Resume not found\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete unknown id is 404",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "http://localhost:3000/v1/resumes/000000000000000000000000",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resumes",
+                "000000000000000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('404', () => pm.response.to.have.status(404));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql(\"Resume not found\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Batch Ingestion (Batch_Ingestion_Flow.md)",
+      "description": "Ingests .pdf, .docx and .doc files from RESUME_SOURCE_DIR in batches of 5 or 10. WARNING: the 'Run batch' requests ingest real files and call Mistral and Groq.",
+      "item": [
+        {
+          "name": "Batch status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/batch-status",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "batch-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('store is consistent', () => pm.expect(d.consistent).to.be.true);",
+                  "pm.test('every supported file accounted for', () => pm.expect(d.ingested + d.duplicate + d.failed + d.pending).to.eql(d.supportedFiles));",
+                  "pm.test('supportedFiles = pdfFiles + wordFiles', () => pm.expect(d.supportedFiles).to.eql(d.pdfFiles + d.wordFiles));",
+                  "pm.test('every failure has a reason', () => d.failures.forEach(f => pm.expect(f.reason).to.be.a('string')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run batch of 5",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/batch-inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "batch-inject"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchSize\": 5\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('at most 5 files', () => pm.expect(d.selected).to.be.at.most(5));",
+                  "pm.test('counts add up', () => pm.expect(d.ingested + d.duplicate + d.failed).to.eql(d.selected));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run batch of 10",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/batch-inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "batch-inject"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchSize\": 10\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('at most 10 files', () => pm.expect(d.selected).to.be.at.most(10));",
+                  "pm.test('counts add up', () => pm.expect(d.ingested + d.duplicate + d.failed).to.eql(d.selected));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Retry failed files",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchSize\": 5,\n  \"retryFailed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/batch-inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "batch-inject"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('counts add up', () => pm.expect(d.ingested + d.duplicate + d.failed).to.eql(d.selected));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Batch size 7 is rejected",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:3000/v1/resume/batch-inject",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "resume",
+                "batch-inject"
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchSize\": 7\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('message', () => pm.expect(pm.response.json().message).to.eql('batchSize must be one of 5, 10'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
