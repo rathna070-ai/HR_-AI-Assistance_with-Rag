@@ -6,6 +6,7 @@ const badgeVariants = cva("inline-flex items-center rounded-full px-2.5 py-0.5 t
   variants: {
     variant: {
       neutral: "bg-slate-100 text-text-muted",
+      ai: "bg-score-ai/15 text-score-ai-ink",
       vector: "bg-score-vector/20 text-score-vector-ink",
       bm25: "bg-score-bm25/20 text-score-bm25-ink",
       hybrid: "bg-score-hybrid/20 text-score-hybrid-ink",

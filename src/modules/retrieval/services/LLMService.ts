@@ -4,6 +4,7 @@ import {
   RerankResult,
   ResumeMetadata,
   SearchCandidate,
+  ShortlistSummary,
   SummaryOptions,
 } from "../types/retrieval.types";
 
@@ -59,6 +60,19 @@ const summaryPrompt = ({ style, maxTokens }: SummaryOptions) => `You summarize h
 Use only the candidate data provided. Never add skills, employers or experience that are not stated.
 Refer to the candidate by name or as "the candidate", never with gendered pronouns, and do not infer gender, age or other personal traits.
 Write ${SUMMARY_LIMITS[style]}, at most ${Math.floor(maxTokens * 0.75)} words, as plain text without headings or lists.`;
+
+const SHORTLIST_PROMPT = `You summarize a shortlist of candidates for a recruiter's search query.
+Use only the candidate data provided. Never add skills, employers or experience that are not stated.
+Refer to candidates by name or as "the candidate", never with gendered pronouns, and do not infer gender, age or other personal traits.
+Judge only skills, roles and experience.
+Reply with one JSON object and nothing else:
+{
+  "overall": string,
+  "candidates": [ { "resumeId": string, "summary": string } ]
+}
+- overall: 2 to 4 sentences on who fits the query best and why, and any gaps common to the shortlist. Plain text.
+- candidates: one entry per input candidate, 2 to 3 sentences each on how well that candidate fits the query, including gaps. Plain text.
+- Use only resumeId values from the input, each at most once. Never invent candidates.`;
 
 const METADATA_PROMPT = `You extract search metadata from resume text.
 Reply with one JSON object and nothing else, using exactly these keys:
@@ -186,6 +200,32 @@ export class LLMService {
       { json: false, maxCompletionTokens: options.maxTokens + REASONING_HEADROOM_TOKENS },
     );
     return { resumeId: candidate.resumeId, summary };
+  }
+
+  // One call for the whole shortlist: an overall summary plus one fit summary
+  // per candidate (one Groq request instead of one per candidate). Summaries
+  // for ids that are not in the input are dropped.
+  async summarizeShortlist(query: string, candidates: SearchCandidate[]): Promise<ShortlistSummary> {
+    const data = await this.chatJson(
+      SHORTLIST_PROMPT,
+      JSON.stringify({ query, candidates: candidates.map(candidateForPrompt) }),
+      "SUMMARIZATION_FAILED",
+    );
+    const overall = asText(data.overall);
+    if (!overall) throw new LLMServiceError("SUMMARIZATION_FAILED", "Model output has no overall summary");
+    if (!Array.isArray(data.candidates)) throw new LLMServiceError("SUMMARIZATION_FAILED", "Model output has no candidates array");
+
+    const summaries = new Map<string, string>();
+    for (const item of data.candidates as Record<string, unknown>[]) {
+      const resumeId = item?.resumeId;
+      const summary = asText(item?.summary);
+      if (typeof resumeId === "string" && summary && !summaries.has(resumeId)) summaries.set(resumeId, summary);
+    }
+    // Input order; a candidate the model skipped simply has no summary.
+    const results = candidates
+      .filter((c) => summaries.has(c.resumeId))
+      .map((c) => ({ resumeId: c.resumeId, summary: summaries.get(c.resumeId)! }));
+    return { overall, results, model: this.model };
   }
 
   // Query-time metadata normalization. Stored ingestion metadata remains the

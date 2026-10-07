@@ -6,6 +6,7 @@ import {
   SearchCandidate,
   SearchFilters,
   SearchRequest,
+  ShortlistSummaryRequest,
   SummarizeRequest,
   SummaryOptions,
   SummaryStyle,
@@ -174,6 +175,23 @@ export const parseSummarizeRequest = (body: unknown): SummarizeRequest => {
     candidate: parseCandidate(input.candidate, "candidate"),
     options: parseSummaryOptions(input.style, input.maxTokens),
   };
+};
+
+// POST /v1/search/summaries: { "query", "resumeIds": ["..."] }, at most
+// maxFinalTopK ids (the size of a result list).
+export const parseShortlistSummaryRequest = (body: unknown): ShortlistSummaryRequest => {
+  const input = isRecord(body) ? body : {};
+  const query = parseQuery(input.query);
+  if (!Array.isArray(input.resumeIds) || !input.resumeIds.length) {
+    return fail("INVALID_CANDIDATES", "resumeIds must be a non-empty array");
+  }
+  if (input.resumeIds.length > LIMITS.maxFinalTopK) fail("INVALID_CANDIDATES", `At most ${LIMITS.maxFinalTopK} resumeIds can be summarized`);
+  const resumeIds = input.resumeIds.map((id, i) => {
+    if (typeof id !== "string" || !OBJECT_ID.test(id)) return fail("INVALID_CANDIDATES", `resumeIds[${i}] must be a 24-character resume id`);
+    return id.toLowerCase();
+  });
+  if (new Set(resumeIds).size !== resumeIds.length) fail("INVALID_CANDIDATES", "resumeIds must not repeat an id");
+  return { query, resumeIds };
 };
 
 // Phase 14: { "query", "filters", "options": { bm25TopK, vectorTopK, rerankTopN,

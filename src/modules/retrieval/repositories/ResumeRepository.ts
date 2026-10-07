@@ -30,13 +30,21 @@ const guard = async <T>(operation: () => Promise<T>): Promise<T> => {
 const resumes = async () => (await getDb()).collection("resumes");
 
 // Fields every search returns; the embedding and full text are left out.
-const candidateProjection = (scoreMeta: "searchScore" | "vectorSearchScore") => ({
+// email, phone and fileName identify repeated resumes of one person.
+const storedCandidateFields = {
   name: 1,
+  email: 1,
+  phone: 1,
+  fileName: 1,
   role: 1,
   company: 1,
   skills: 1,
   totalExperience: 1,
   snippet: { $substrCP: [{ $ifNull: ["$rawText", ""] }, 0, SNIPPET_CHARS] },
+};
+
+const candidateProjection = (scoreMeta: "searchScore" | "vectorSearchScore") => ({
+  ...storedCandidateFields,
   score: { $meta: scoreMeta },
 });
 
@@ -97,6 +105,13 @@ export class ResumeRepository {
   findExistingIds(ids: ObjectId[]): Promise<string[]> {
     return guard(async () =>
       (await (await resumes()).find({ _id: { $in: ids } }, { projection: { _id: 1 } }).toArray()).map((d) => d._id.toHexString()),
+    );
+  }
+
+  // Shortlist summaries: the given resumes with the same fields search returns.
+  findCandidates(ids: ObjectId[]): Promise<Document[]> {
+    return guard(async () =>
+      (await resumes()).aggregate([{ $match: { _id: { $in: ids } } }, { $project: storedCandidateFields }]).toArray(),
     );
   }
 

@@ -55,6 +55,53 @@ describe("LLM re-rank output validation (Phase 10 / 11)", () => {
   }
 });
 
+describe("shortlist summary (POST /v1/search/summaries)", () => {
+  beforeEach(() => {
+    process.env.GROQ_API_KEY = "primary-key";
+    delete process.env.GROQ_API_KEY_FALLBACK;
+  });
+  afterEach(() => mock.restoreAll());
+
+  it("returns the overall summary and input-ordered summaries, dropping unknown and repeated ids", async () => {
+    mock.method(globalThis, "fetch", async () =>
+      reply(
+        JSON.stringify({
+          overall: "B fits best.",
+          candidates: [
+            { resumeId: "B", summary: "b fits" },
+            { resumeId: "Z", summary: "invented" },
+            { resumeId: "A", summary: "a fits" },
+            { resumeId: "B", summary: "repeat" },
+          ],
+        }),
+      ),
+    );
+    const result = await new LLMService("test-model").summarizeShortlist("q", candidates);
+    assert.deepEqual(result, {
+      overall: "B fits best.",
+      results: [
+        { resumeId: "A", summary: "a fits" },
+        { resumeId: "B", summary: "b fits" },
+      ],
+      model: "test-model",
+    });
+  });
+
+  for (const [label, content] of [
+    ["invalid JSON", "not json"],
+    ["no overall summary", JSON.stringify({ candidates: [] })],
+    ["no candidates array", JSON.stringify({ overall: "x" })],
+  ]) {
+    it(`fails with SUMMARIZATION_FAILED on ${label}`, async () => {
+      mock.method(globalThis, "fetch", async () => reply(content));
+      await assert.rejects(
+        new LLMService("test-model").summarizeShortlist("q", candidates),
+        (err: unknown) => err instanceof LLMServiceError && err.errorCode === "SUMMARIZATION_FAILED",
+      );
+    });
+  }
+});
+
 describe("Groq key fallback", () => {
   afterEach(() => mock.restoreAll());
   const policy = { maxAttempts: 1, baseDelayMs: 1, maxRetryWaitMs: 10, timeoutMs: 1_000 };

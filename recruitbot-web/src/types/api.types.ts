@@ -55,3 +55,47 @@ export interface BackendResume {
   experienceSummary?: string | null;
   ingestedAt?: string;
 }
+
+// POST /v1/search (end-to-end pipeline)
+export interface BackendFinalSearchResponse {
+  query: string;
+  results: {
+    rank: number;
+    resumeId: string;
+    name: string | null;
+    role: string | null;
+    company: string | null;
+    totalExperience: number | null;
+    skills: string[];
+    sources: ("bm25" | "vector")[];
+    relevanceScore: number | null;
+    reason: string | null;
+    bm25Score: number | null;
+    vectorScore: number | null;
+    email: string | null;
+    phone: string | null;
+    snippet: string | null;
+    matchedSkills: string[];
+    duplicates: { resumeId: string; fileName: string | null }[];
+  }[];
+  degraded: boolean;
+  warnings: string[];
+  vectorFallback?: true;
+  bm25Fallback?: true;
+  pipeline: {
+    retrieved: { bm25: number; vector: number };
+    uniqueResumes: number;
+    duplicatesMerged: number;
+    reranked: number;
+    returned: number;
+  };
+  timings: Record<string, number>;
+}
+
+// POST /v1/search/summaries
+export interface BackendShortlistSummary {
+  query: string;
+  overall: string;
+  results: { resumeId: string; summary: string }[];
+  model: string;
+}

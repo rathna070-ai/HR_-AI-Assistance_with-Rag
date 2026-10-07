@@ -36,9 +36,18 @@ export interface VectorSearchRequest extends SearchRequest {
 // Phase 7: one shape for BM25 and vector candidates.
 export type CandidateSource = "bm25" | "vector";
 
+// Another stored resume of the same person, folded into a result by dedupeByPerson().
+export interface DuplicateResume {
+  resumeId: string;
+  fileName: string | null;
+}
+
 export interface SearchCandidate {
   resumeId: string;
   name?: string;
+  email?: string;
+  phone?: string;
+  fileName?: string;
   role?: string;
   company?: string;
   skills?: string[];
@@ -47,6 +56,7 @@ export interface SearchCandidate {
   bm25Score?: number;
   vectorScore?: number;
   sources: CandidateSource[];
+  duplicates?: DuplicateResume[];
 }
 
 // Phase 5: POST /v1/search/bm25
@@ -178,6 +188,25 @@ export interface FinalSearchResult {
   skills: string[];
   sources: CandidateSource[];
   summary?: string;
+  // From the LLM re-ranker; null when re-ranking fell back to retrieval order.
+  relevanceScore: number | null;
+  reason: string | null;
+  bm25Score: number | null;
+  vectorScore: number | null;
+  email: string | null;
+  phone: string | null;
+  snippet: string | null;
+  matchedSkills: string[];
+  duplicates: DuplicateResume[];
+}
+
+// How many candidates each pipeline step produced, for display.
+export interface SearchPipelineStats {
+  retrieved: { bm25: number; vector: number };
+  uniqueResumes: number;
+  duplicatesMerged: number;
+  reranked: number;
+  returned: number;
 }
 
 export interface SearchTimings {
@@ -199,5 +228,18 @@ export interface FinalSearchResponse {
   warnings: SearchWarning[];
   vectorFallback?: true;
   bm25Fallback?: true;
+  pipeline: SearchPipelineStats;
   timings: SearchTimings;
+}
+
+// POST /v1/search/summaries
+export interface ShortlistSummaryRequest {
+  query: string;
+  resumeIds: string[];
+}
+
+export interface ShortlistSummary {
+  overall: string;
+  results: CandidateSummary[];
+  model: string;
 }

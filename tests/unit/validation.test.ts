@@ -5,6 +5,7 @@ import {
   parseEndToEndSearchRequest,
   parseRerankRequest,
   parseSearchRequest,
+  parseShortlistSummaryRequest,
   parseSummarizeRequest,
   RetrievalRequestError,
 } from "../../src/modules/retrieval/services/RetrievalValidationService";
@@ -61,6 +62,19 @@ describe("rerank / summarize validation", () => {
     rejects(() => parseSummarizeRequest({ query: "x", candidate, style: "long" }), "INVALID_OPTIONS");
     rejects(() => parseSummarizeRequest({ query: "x", candidate, maxTokens: 5 }), "INVALID_OPTIONS");
     assert.deepEqual(parseSummarizeRequest({ query: "x", candidate }).options, { style: "short", maxTokens: 150 });
+  });
+});
+
+describe("shortlist summary validation", () => {
+  it("requires 1 to maxFinalTopK unique resume ids", () => {
+    rejects(() => parseShortlistSummaryRequest({ query: "x" }), "INVALID_CANDIDATES");
+    rejects(() => parseShortlistSummaryRequest({ query: "x", resumeIds: [] }), "INVALID_CANDIDATES");
+    rejects(() => parseShortlistSummaryRequest({ query: "x", resumeIds: ["abc"] }), "INVALID_CANDIDATES");
+    rejects(() => parseShortlistSummaryRequest({ query: "x", resumeIds: [ID, ID] }), "INVALID_CANDIDATES");
+    const tooMany = Array.from({ length: LIMITS.maxFinalTopK + 1 }, (_, i) => i.toString(16).padStart(24, "0"));
+    rejects(() => parseShortlistSummaryRequest({ query: "x", resumeIds: tooMany }), "INVALID_CANDIDATES");
+    rejects(() => parseShortlistSummaryRequest({ resumeIds: [ID] }), "INVALID_SEARCH_QUERY");
+    assert.deepEqual(parseShortlistSummaryRequest({ query: " x ", resumeIds: [ID.toUpperCase()] }), { query: "x", resumeIds: [ID] });
   });
 });
 

@@ -105,6 +105,42 @@ describe("end-to-end search fallbacks (Phase 13 / 15)", () => {
     assert.deepEqual(response.results.map((r) => r.summary), ["fit A", "fit B", "fit C"]);
   });
 
+  it("returns the re-rank reason and score, matched skills and pipeline counts", async () => {
+    mock.method(llmService, "rerankCandidates", async () => ({
+      model: "m",
+      results: [{ resumeId: "B", rank: 1, relevanceScore: 0.92, reason: "Strong Selenium match" }],
+    }));
+    mock.method(searchService, "bm25Search", async () => [
+      { resumeId: "A", name: "A", email: "same@mail.com", fileName: "a.pdf", bm25Score: 3, sources: ["bm25"] },
+      { resumeId: "B", name: "B", skills: ["Selenium", "Java"], bm25Score: 2, sources: ["bm25"] },
+    ]);
+    mock.method(searchService, "vectorSearch", async () => [
+      { resumeId: "C", name: "A", email: "same@mail.com", fileName: "a-1page.pdf", vectorScore: 0.9, sources: ["vector"] },
+    ]);
+    const response = await searchService.endToEndSearch("selenium tester", {}, options);
+    assert.equal(response.results[0].reason, "Strong Selenium match");
+    assert.equal(response.results[0].relevanceScore, 0.92);
+    assert.deepEqual(response.results[0].matchedSkills, ["Selenium"]);
+    assert.deepEqual(response.pipeline, { retrieved: { bm25: 2, vector: 1 }, uniqueResumes: 3, duplicatesMerged: 1, reranked: 2, returned: 1 });
+  });
+
+  it("keeps one result per person and reports the other resume when re-ranking fails", async () => {
+    mock.method(llmService, "rerankCandidates", fail);
+    mock.method(searchService, "bm25Search", async () => [
+      { resumeId: "A", email: "same@mail.com", fileName: "a.pdf", sources: ["bm25"] },
+      { resumeId: "B", sources: ["bm25"] },
+    ]);
+    mock.method(searchService, "vectorSearch", async () => [
+      { resumeId: "C", email: "same@mail.com", fileName: "a-1page.pdf", sources: ["vector"] },
+    ]);
+    const response = await searchService.endToEndSearch("q", {}, options);
+    assert.deepEqual(response.results.map((r) => r.resumeId), ["A", "B"]);
+    assert.deepEqual(response.results[0].duplicates, [{ resumeId: "C", fileName: "a-1page.pdf" }]);
+    assert.equal(response.results[0].reason, null);
+    assert.equal(response.results[0].relevanceScore, null);
+    assert.equal(response.pipeline.reranked, 0);
+  });
+
   it("marks hybrid search degraded instead of failing", async () => {
     mock.method(searchService, "vectorSearch", fail);
     const { bm25, vector, flags } = await searchService.hybridSearch("q", {}, { bm25TopK: 5, vectorTopK: 5 });

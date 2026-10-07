@@ -1,4 +1,4 @@
-import { Blend, KeyRound, Sparkles } from "lucide-react";
+import { Blend, BrainCircuit, KeyRound, Sparkles } from "lucide-react";
 import { BotBubble } from "./BotBubble";
 
 export function WelcomeMessage() {
@@ -9,6 +9,13 @@ export function WelcomeMessage() {
         <p className="font-medium">Hi, I&apos;m TalentLens AI. Describe the candidate you&apos;re looking for.</p>
         <p className="mt-2 text-text-muted">Pick a search mode in the sidebar:</p>
         <ul className="mt-2 flex flex-col gap-1.5 text-text-muted">
+          <li className="flex items-center gap-2">
+            <BrainCircuit className="h-4 w-4 text-score-ai" aria-hidden />
+            <span>
+              <span className="text-text-primary">AI Search</span>: keyword + semantic search, duplicates removed, ranked and summarized by
+              AI
+            </span>
+          </li>
           <li className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-score-vector" aria-hidden />
             <span>

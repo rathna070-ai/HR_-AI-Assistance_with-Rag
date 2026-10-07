@@ -22,6 +22,7 @@ export default {
         "text-muted": "#64748B",
         // Search mode colours. "ink" is a darker shade of the same hue for text
         // on light backgrounds (WCAG AA contrast).
+        "score-ai": { DEFAULT: "#7C3AED", ink: "#6D28D9" },
         "score-vector": { DEFAULT: "#6366F1", ink: "#4338CA" },
         "score-bm25": { DEFAULT: "#2563EB", ink: "#1D4ED8" },
         "score-hybrid": { DEFAULT: "#10B981", ink: "#047857" },

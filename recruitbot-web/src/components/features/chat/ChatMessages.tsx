@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { LoadingDots } from "@/components/common/LoadingDots";
 import { useChat } from "@/hooks/use-chat";
+import { useSearchStore } from "@/lib/stores/search.store";
 import { BotBubble } from "./BotBubble";
+import { SearchProgress } from "./SearchProgress";
 import { UserBubble } from "./UserBubble";
 import { WelcomeMessage } from "./WelcomeMessage";
 
@@ -9,6 +10,7 @@ import { WelcomeMessage } from "./WelcomeMessage";
 // after the thread is cleared.
 export function ChatMessages() {
   const { messages, isSearching } = useChat();
+  const searchingMode = useSearchStore((s) => s.searchingMode);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function ChatMessages() {
         )}
         {isSearching && (
           <BotBubble>
-            <LoadingDots />
+            <SearchProgress mode={searchingMode} />
           </BotBubble>
         )}
         <div ref={endRef} />

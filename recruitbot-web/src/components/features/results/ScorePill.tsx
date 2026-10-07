@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils/cn";
 import type { SearchMode } from "@/types/search.types";
 
 const PILL_CLASSES: Record<SearchMode, string> = {
+  ai: "text-score-ai-ink bg-score-ai/10",
   vector: "text-score-vector-ink bg-score-vector/10",
   bm25: "text-score-bm25-ink bg-score-bm25/10",
   hybrid: "text-score-hybrid-ink bg-score-hybrid/10",

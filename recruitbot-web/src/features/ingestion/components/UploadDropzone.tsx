@@ -58,6 +58,8 @@ export function UploadDropzone({ selectedFile, disabled, onFileSelected }: Uploa
       </button>
       <input
         ref={inputRef}
+        id="resume-file"
+        name="file"
         type="file"
         accept="application/pdf,.pdf"
         className="hidden"

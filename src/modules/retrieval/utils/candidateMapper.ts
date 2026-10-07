@@ -16,15 +16,24 @@ export const matchSkills = (skills: unknown, query: string): string[] => {
   });
 };
 
-// Phase 7: a search hit from MongoDB as a normalized candidate.
-export const toCandidate = (doc: Document, source: CandidateSource): SearchCandidate => ({
+// A stored resume as a candidate, without search scores or sources.
+export const toStoredCandidate = (doc: Document): SearchCandidate => ({
   resumeId: doc._id.toHexString(),
   ...(doc.name && { name: doc.name }),
+  ...(doc.email && { email: String(doc.email) }),
+  ...(doc.phone && { phone: String(doc.phone) }),
+  ...(doc.fileName && { fileName: String(doc.fileName) }),
   ...(doc.role && { role: doc.role }),
   ...(doc.company && { company: doc.company }),
   skills: Array.isArray(doc.skills) ? doc.skills : [],
   totalExperience: typeof doc.totalExperience === "number" ? doc.totalExperience : null,
   ...(doc.snippet && { snippet: String(doc.snippet).replace(/\s+/g, " ").trim() }),
+  sources: [],
+});
+
+// Phase 7: a search hit from MongoDB as a normalized candidate.
+export const toCandidate = (doc: Document, source: CandidateSource): SearchCandidate => ({
+  ...toStoredCandidate(doc),
   ...(source === "bm25" ? { bm25Score: round(doc.score, 2) } : { vectorScore: round(doc.score, 4) }),
   sources: [source],
 });

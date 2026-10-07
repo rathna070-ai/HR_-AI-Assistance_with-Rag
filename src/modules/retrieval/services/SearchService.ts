@@ -6,14 +6,15 @@ import {
   FinalSearchResult,
   HybridDebugFlags,
   HybridTimings,
+  RerankResult,
   SearchCandidate,
   SearchFilters,
   SearchOptions,
   SearchTimings,
   SearchWarning,
 } from "../types/retrieval.types";
-import { toCandidate } from "../utils/candidateMapper";
-import { mergeCandidates } from "../utils/deduplicate";
+import { matchSkills, toCandidate } from "../utils/candidateMapper";
+import { dedupeByPerson, mergeCandidates } from "../utils/deduplicate";
 import { llmService } from "./LLMService";
 
 const elapsed = (start: bigint) => Number((process.hrtime.bigint() - start) / 1_000_000n);
@@ -95,7 +96,7 @@ const logFallback = (context: SearchContext, event: string, error?: unknown) =>
     }),
   );
 
-const toFinalResult = (candidate: SearchCandidate, rank: number): FinalSearchResult => ({
+const toFinalResult = (candidate: SearchCandidate, rank: number, query: string, rerank?: RerankResult): FinalSearchResult => ({
   rank,
   resumeId: candidate.resumeId,
   name: candidate.name ?? null,
@@ -104,6 +105,15 @@ const toFinalResult = (candidate: SearchCandidate, rank: number): FinalSearchRes
   totalExperience: candidate.totalExperience ?? null,
   skills: candidate.skills ?? [],
   sources: candidate.sources,
+  relevanceScore: rerank?.relevanceScore ?? null,
+  reason: rerank?.reason || null,
+  bm25Score: candidate.bm25Score ?? null,
+  vectorScore: candidate.vectorScore ?? null,
+  email: candidate.email ?? null,
+  phone: candidate.phone ?? null,
+  snippet: candidate.snippet ?? null,
+  matchedSkills: matchSkills(candidate.skills, query),
+  duplicates: candidate.duplicates ?? [],
 });
 
 // Retrieval Phase 7 (bm25Search, vectorSearch), Phase 8 (hybridSearch),
@@ -202,7 +212,8 @@ export class SearchService {
   }
 
   // Phase 13: validate (caller) -> embed -> BM25 + vector -> merge ->
-  // deduplicate -> top N -> LLM re-rank -> optional summaries -> response.
+  // deduplicate (by resume, then by person) -> top N -> LLM re-rank ->
+  // optional summaries -> response.
   async endToEndSearch(
     query: string,
     filters: SearchFilters,
@@ -218,27 +229,36 @@ export class SearchService {
       context,
     );
 
-    // One candidate pool, deduplicated by resumeId, with sources kept.
-    const pool = mergeCandidates(interleave(bm25 ?? [], vector ?? []));
+    // One candidate pool, deduplicated by resumeId, with sources kept, then
+    // one entry per person so the re-ranker never sees the same person twice.
+    const merged = mergeCandidates(interleave(bm25 ?? [], vector ?? []));
+    const pool = dedupeByPerson(merged);
     const topN = pool.slice(0, options.rerankTopN);
 
     // LLM re-ranking is the final authority on order. If it fails, fall back
     // to BM25 order first, then vector-only candidates.
     let ranked: SearchCandidate[];
     let rerankMs = 0;
+    let rerankById = new Map<string, RerankResult>();
     try {
       const rerank = await timed(() => llmService.rerankCandidates(query, topN, options.finalTopK));
       rerankMs = rerank.ms;
+      rerankById = new Map(rerank.value.results.map((r) => [r.resumeId, r]));
       const byId = new Map(topN.map((c) => [c.resumeId, c]));
       ranked = rerank.value.results.map((r) => byId.get(r.resumeId)!).filter(Boolean);
     } catch (err) {
       warnings.push("LLM_RERANK_FAILED");
       logFallback(context, "rerank_failed", err);
-      const ids = new Set(topN.map((c) => c.resumeId));
-      ranked = mergeCandidates(bm25 ?? [], vector ?? []).filter((c) => ids.has(c.resumeId));
+      // A person's position is that of their best-placed resume.
+      const order = new Map(mergeCandidates(bm25 ?? [], vector ?? []).map((c, i) => [c.resumeId, i]));
+      const position = (c: SearchCandidate) =>
+        Math.min(...[c.resumeId, ...(c.duplicates ?? []).map((d) => d.resumeId)].map((id) => order.get(id) ?? Infinity));
+      ranked = [...topN].sort((a, b) => position(a) - position(b));
     }
 
-    const results = ranked.slice(0, options.finalTopK).map((c, i) => toFinalResult(c, i + 1));
+    const results = ranked
+      .slice(0, options.finalTopK)
+      .map((c, i) => toFinalResult(c, i + 1, query, rerankById.get(c.resumeId)));
 
     // Optional summaries; a failure keeps the ranked results without them.
     let summarizeMs = 0;
@@ -274,6 +294,13 @@ export class SearchService {
       warnings,
       ...(!vector && { vectorFallback: true as const }),
       ...(!bm25 && { bm25Fallback: true as const }),
+      pipeline: {
+        retrieved: { bm25: bm25?.length ?? 0, vector: vector?.length ?? 0 },
+        uniqueResumes: merged.length,
+        duplicatesMerged: merged.length - pool.length,
+        reranked: rerankById.size ? topN.length : 0,
+        returned: results.length,
+      },
       timings,
     };
   }

@@ -10,6 +10,7 @@ router.post("/search/vector", retrievalController.vectorSearch);
 router.post("/search/hybrid", retrievalController.hybridSearch);
 router.post("/search/rerank", retrievalController.rerank);
 router.post("/search/summarize", retrievalController.summarize);
+router.post("/search/summaries", retrievalController.summarizeShortlist);
 router.post("/search", retrievalController.search);
 
 export default router;

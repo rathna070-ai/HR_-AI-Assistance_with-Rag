@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "HR Resume Retrieval - Phase-wise Verification",
-    "description": "Verifies every phase of 02_Resume_Retrieval_Phasewise_Implementation.md (Phases 1-18). Start the server with npm run dev (http://localhost:3000). Run the folders in order: Phase 5 saves the resume ids that Phases 11 and 12 use.",
+    "description": "Verifies every phase of 02_Resume_Retrieval_Phasewise_Implementation.md (Phases 1-18, plus Phase 19: AI Search). Start the server with npm run dev (http://localhost:3000). Run the folders in order: Phase 5 saves the resume ids that Phases 11 and 12 use.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -2153,6 +2153,343 @@
       "name": "Phase 18 - Automated Tests",
       "description": "Run in a terminal, not Postman:\n- npm test: 35 unit tests (deduplication, candidate mapping, filter validation, BM25/vector normalization, LLM output validation, Groq key fallback, fallback ordering).\n- npm run test:integration: 10 tests against the real API, MongoDB, Mistral and Groq for every retrieval endpoint, including end-to-end search.",
       "item": []
+    },
+    {
+      "name": "Phase 19 - AI Search (re-rank details, person dedup, summaries)",
+      "item": [
+        {
+          "name": "End-to-end search returns reasons, scores and pipeline counts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Selenium automation tester with Java\",\n  \"options\": {\n    \"finalTopK\": 5,\n    \"rerankTopN\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('pipeline counts', () => pm.expect(d.pipeline).to.include.all.keys('retrieved', 'uniqueResumes', 'duplicatesMerged', 'reranked', 'returned'));",
+                  "pm.test('returned matches results', () => pm.expect(d.pipeline.returned).to.eql(d.results.length));",
+                  "pm.test('each result has re-rank and display fields', () => d.results.forEach((r) => pm.expect(r).to.include.all.keys('relevanceScore', 'reason', 'matchedSkills', 'duplicates', 'email', 'phone', 'snippet')));",
+                  "pm.test('re-ranked results have a score and reason', () => { if (!d.warnings.includes('LLM_RERANK_FAILED')) d.results.forEach((r) => { pm.expect(r.relevanceScore).to.be.within(0, 1); pm.expect(r.reason).to.be.a('string'); }); });",
+                  "pm.test('one result per person (email)', () => { const emails = d.results.map((r) => r.email && r.email.toLowerCase()).filter(Boolean); pm.expect(new Set(emails).size).to.eql(emails.length); });",
+                  "if (d.results.length > 1) { pm.collectionVariables.set('resumeId1', d.results[0].resumeId); pm.collectionVariables.set('resumeId2', d.results[1].resumeId); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repeated resumes of one person are merged",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Gayathri Hemachandran fresher\",\n  \"options\": {\n    \"finalTopK\": 5,\n    \"rerankTopN\": 10\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('duplicates merged', () => pm.expect(d.pipeline.duplicatesMerged).to.be.at.least(1));",
+                  "pm.test('a result lists its other resume', () => pm.expect(d.results.some((r) => r.duplicates.length > 0)).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Shortlist summary (overall + per candidate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"Selenium automation tester with Java\",\n  \"resumeIds\": [\n    \"{{resumeId1}}\",\n    \"{{resumeId2}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search/summaries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search",
+                "summaries"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json();",
+                  "pm.test('overall summary', () => pm.expect(d.overall).to.be.a('string').and.not.empty);",
+                  "const ids = [pm.collectionVariables.get('resumeId1'), pm.collectionVariables.get('resumeId2')];",
+                  "pm.test('only requested ids', () => d.results.forEach((r) => pm.expect(ids).to.include(r.resumeId)));",
+                  "pm.test('no gendered pronouns', () => pm.expect(/\\b(he|she|his|her|him)\\b/i.test(d.overall + d.results.map((r) => r.summary).join(' '))).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unknown resumeId is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"x\",\n  \"resumeIds\": [\n    \"000000000000000000000000\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search/summaries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search",
+                "summaries"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('errorCode INVALID_CANDIDATES', () => pm.expect(pm.response.json().errorCode).to.eql('INVALID_CANDIDATES'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empty resumeIds are rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"x\",\n  \"resumeIds\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search/summaries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search",
+                "summaries"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('errorCode INVALID_CANDIDATES', () => pm.expect(pm.response.json().errorCode).to.eql('INVALID_CANDIDATES'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repeated resumeId is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"x\",\n  \"resumeIds\": [\n    \"{{resumeId1}}\",\n    \"{{resumeId1}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search/summaries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search",
+                "summaries"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('errorCode INVALID_CANDIDATES', () => pm.expect(pm.response.json().errorCode).to.eql('INVALID_CANDIDATES'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Missing query is rejected",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeIds\": [\n    \"{{resumeId1}}\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:3000/v1/search/summaries",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "3000",
+              "path": [
+                "v1",
+                "search",
+                "summaries"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('400 Bad Request', () => pm.response.to.have.status(400));",
+                  "pm.test('errorCode INVALID_SEARCH_QUERY', () => pm.expect(pm.response.json().errorCode).to.eql('INVALID_SEARCH_QUERY'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

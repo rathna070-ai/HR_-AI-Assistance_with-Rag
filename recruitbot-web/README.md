@@ -4,7 +4,7 @@ React + TypeScript frontend for the HR resume backend in the parent folder: uplo
 
 | Route | Page |
 |---|---|
-| `/` | Candidate search chat (Vector, BM25, Hybrid) |
+| `/` | Candidate search chat (AI Search by default; Vector, BM25, Hybrid) |
 | `/ingestion` | Resume upload |
 | `/help` | How to use the app and how it works (linked from the sidebar footer) |
 
@@ -36,6 +36,7 @@ In development the browser calls `/v1/...` on the same origin and Vite forwards 
 | Feature | Endpoint |
 |---|---|
 | Resume upload | `POST /v1/resume/inject` (form-data field `file`, PDF, max 5MB) |
+| AI Search (default) | `POST /v1/search` (BM25 + vector, de-duplicated by resume and by person, re-ranked by the LLM), then `POST /v1/search/summaries` for the shortlist and per-candidate summaries |
 | Vector search | `POST /v1/search/vector` |
 | BM25 search | `POST /v1/search/bm25` |
 | Hybrid search | `POST /v1/search/hybrid`, blended in the browser with the sidebar weights (`src/lib/utils/hybridFusion.ts`) |

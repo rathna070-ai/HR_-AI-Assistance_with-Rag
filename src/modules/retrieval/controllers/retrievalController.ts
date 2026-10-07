@@ -8,6 +8,7 @@ import {
   parseEndToEndSearchRequest,
   parseRerankRequest,
   parseSearchRequest,
+  parseShortlistSummaryRequest,
   parseSummarizeRequest,
   parseVectorSearchRequest,
   RetrievalRequestError,
@@ -22,7 +23,7 @@ import {
   SearchCandidate,
   VectorResponse,
 } from "../types/retrieval.types";
-import { toBm25Result, toHybridItem, toVectorResult } from "../utils/candidateMapper";
+import { toBm25Result, toHybridItem, toStoredCandidate, toVectorResult } from "../utils/candidateMapper";
 
 const errorBody = (errorCode: string, message: string): RetrievalErrorBody => ({ success: false, errorCode, message });
 
@@ -166,6 +167,29 @@ export const summarize = async (req: Request, res: Response, next: NextFunction)
     const summary = await llmService.summarizeCandidateFit(query, candidate, options);
     setTimings(res, { summarizeMs: elapsed(start) });
     return res.status(200).json(summary);
+  } catch (err) {
+    return handleError(err, res, next);
+  }
+};
+
+// POST /v1/search/summaries. Overall summary of a result list plus one fit
+// summary per candidate, in one LLM call. Candidate data is loaded here, by
+// id, so clients cannot supply the text that gets summarized.
+export const summarizeShortlist = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { query, resumeIds } = parseShortlistSummaryRequest(req.body);
+    const docs = await resumeRepository.findCandidates(resumeIds.map((id) => new ObjectId(id)));
+    const byId = new Map(docs.map((doc) => [doc._id.toHexString(), toStoredCandidate(doc)]));
+    const unknown = resumeIds.filter((id) => !byId.has(id));
+    if (unknown.length) throw new RetrievalRequestError("INVALID_CANDIDATES", `Unknown resumeId: ${unknown.join(", ")}`);
+
+    const start = process.hrtime.bigint();
+    const summary = await llmService.summarizeShortlist(
+      query,
+      resumeIds.map((id) => byId.get(id)!),
+    );
+    setTimings(res, { summarizeMs: elapsed(start) });
+    return res.status(200).json({ query, ...summary });
   } catch (err) {
     return handleError(err, res, next);
   }

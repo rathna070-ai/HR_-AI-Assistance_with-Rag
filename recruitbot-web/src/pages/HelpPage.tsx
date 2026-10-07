@@ -21,8 +21,8 @@ const QUICK_START: { title: string; body: ReactNode }[] = [
     title: "Pick a search mode",
     body: (
       <>
-        Choose <strong>Vector</strong>, <strong>BM25 Keyword</strong> or <strong>Hybrid</strong> in the sidebar. The active mode is shown in
-        blue at the top right.
+        <strong>AI Search</strong> is selected by default. You can also choose <strong>Vector</strong>, <strong>BM25 Keyword</strong> or{" "}
+        <strong>Hybrid</strong> in the sidebar. The active mode is shown in blue at the top right.
       </>
     ),
   },
@@ -39,7 +39,9 @@ const QUICK_START: { title: string; body: ReactNode }[] = [
     title: "Review the results",
     body: (
       <>
-        Candidates are ranked best first, with their score, years of experience, contact details and a snippet of the resume. Change how
+        Candidates are ranked best first, with their score, years of experience and contact details. In AI Search each card also says{" "}
+        <strong>why it matches</strong>, highlights the skills from your query, and gets a short fit summary, with an AI summary of the
+        whole shortlist on top. A person with more than one resume on file is shown once, marked &ldquo;+1 more resume&rdquo;. Change how
         many are returned with <strong>Results limit</strong> (3, 5, 10 or 20).
       </>
     ),
@@ -63,6 +65,13 @@ const QUICK_START: { title: string; body: ReactNode }[] = [
 ];
 
 const MODES = [
+  {
+    mode: "ai" as const,
+    name: "AI Search",
+    bestFor:
+      "Most searches. Runs keyword and semantic search together, removes repeated resumes of the same person, lets the AI rank the best candidates with a reason for each, and summarizes the shortlist.",
+    score: "Relevance, 0 to 1, given by the AI",
+  },
   {
     mode: "vector" as const,
     name: "Vector",
@@ -186,6 +195,14 @@ export function HelpPage() {
             <h3 className="font-semibold text-text-primary">When you search</h3>
             <ul className="mt-3 flex flex-col gap-2 border-l-2 border-primary/20 pl-4 leading-6 text-text-muted">
               <li>
+                <span className="font-medium text-text-primary">AI Search:</span> BM25 and vector search run at the same time. Their results
+                are merged into one list; a resume found by both counts once. Resumes of the same person (same email or phone, or the same
+                name when neither is on the resume) are combined, keeping the best-ranked one. The top candidates (at least 10) are then
+                ranked by a Groq-hosted language model, which scores each one from 0 to 1 and explains the match using only the resume data.
+                Finally a second AI request summarizes the shortlist and each candidate&apos;s fit. If AI ranking is unavailable, results
+                stay in search-score order and a notice says so.
+              </li>
+              <li>
                 <span className="font-medium text-text-primary">Vector:</span> your query is turned into a vector with the same Mistral
                 model and compared with every resume&apos;s vector using MongoDB Atlas Vector Search (cosine similarity).
               </li>
@@ -205,7 +222,8 @@ export function HelpPage() {
           <ul className="flex list-disc flex-col gap-2 pl-5 text-sm leading-6 text-text-muted">
             <li>Use exact tool and technology names with BM25 Keyword.</li>
             <li>Use full sentences that describe the role with Vector.</li>
-            <li>Not sure which to use? Start with Hybrid at 50/50.</li>
+            <li>Not sure which to use? Start with AI Search; compare with Hybrid at 50/50 to see the raw search ranking.</li>
+            <li>Queries can be up to 1,000 characters.</li>
             <li>
               A profile only shows what was found in the resume. A missing section means the resume did not contain it or it could not be
               read.
