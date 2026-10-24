@@ -7,8 +7,9 @@ export function IngestionPage() {
   return (
     <div className="h-full overflow-y-auto bg-bg-base">
       <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-4 py-10">
-        <header className="flex items-start justify-between gap-4">
-          <div>
+        {/* On narrow screens the link wraps below the title instead of squeezing it. */}
+        <header className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-[16rem] flex-1">
             <BrandWordmark height={36} />
             <h1 className="mt-4 text-2xl font-semibold text-navy">Resume ingestion</h1>
             <p className="mt-1 text-sm text-text-muted">Upload a resume PDF to make it searchable.</p>
